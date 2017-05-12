@@ -1,0 +1,388 @@
+---
+title: "P.cinnamomi GBS analysis"
+author: "Shankar K Shakya"
+date: "May 9, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width = 18, fig.height = 12, echo = F, warning = F, message = F, verbose = F)
+
+```
+
+### Phytophtora cinnamomi GBS analysis
+
+
+## Filtering samples that are not P.cinnamomi
+
+The vcf file was generated using TASSEL pipeline by CGRB. Some of the samples in the provided vcf file were not P.cinnamomi so have to be removed. We have 144 P.cinnamomi isolates.
+
+```{r, eval=FALSE, include=FALSE}
+rm(list =ls())
+
+library(vcfR, quietly = TRUE)
+vcf <- read.vcfR("c1.mergedsnps.vcf-deconcatenate.vcf", verbose = FALSE)
+
+gt <- vcf@gt
+gt <- gt[, c(1:102, 104:146)]
+vcf@gt <- gt
+
+#head(vcf)
+vcf
+
+
+```
+
+
+## Filtering samples by depth
+
+```{r}
+
+dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+
+quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.8), na.rm=TRUE)
+dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[1,])
+dp[dp2 < 0] <- NA
+
+dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[2,])
+dp[dp2 > 0] <- NA
+
+dp[dp < 4] <- NA
+
+vcf@gt[,-1][ is.na(dp) == TRUE ] <- NA
+
+
+vcf ## 48.1% missing data
+
+#heatmap.bp(dp[1:1000,], rlabels = FALSE)
+```
+
+## Omitting samples
+
+```{r, eval=FALSE, include=FALSE}
+
+myMiss <- apply(dp, MARGIN = 2, function(x){ sum( is.na(x) ) } )
+myMiss <- myMiss / nrow(dp)
+vcf@gt <- vcf@gt[, c(TRUE, myMiss < 0.6)]
+vcf #127 samples
+
+```
+
+## Omitting variants
+
+
+```{r, eval=FALSE, include=FALSE}
+
+myMiss <- apply(dp, MARGIN = 1, function(x){ sum( is.na(x) ) } )
+myMiss <- myMiss / ncol(dp)
+vcf <- vcf[myMiss < 0.2, ]
+vcf #29521
+
+
+
+write.vcf(vcf, file = "Filtered.vcf.gz")
+# dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+# heatmap.bp(dp[1:1000,], rlabels = FALSE)
+
+vcf <- read.vcfR("Filtered.vcf.gz")
+
+```
+
+## Filtering by Minor allele frequency
+
+```{r, eval=FALSE, include=FALSE}
+
+mymaf <- maf(vcf, element = 2)
+head(mymaf)
+
+nrow(mymaf)
+
+mymaf <- mymaf[mymaf[,4] > 0.05,]
+
+
+head(rownames(mymaf))
+length(rownames(mymaf))
+
+class(mymaf)
+
+# variants <- strsplit(rownames(mymaf), "_")
+# variants <- sapply(variants, function(x) x[2])
+# head(variants)
+# length(variants) #19057
+
+
+nrow(vcf@fix) # 29521
+head(vcf@fix)
+
+fix <- vcf@fix[vcf@fix[,3] %in% rownames(mymaf), ]
+
+nrow(fix)
+
+vcf@fix <- fix
+
+
+nrow(vcf@fix)
+
+true_ind <- which(vcf@fix[,3] %in% rownames(mymaf))
+vcf@fix <- vcf@fix[true_ind, ]
+
+vcf@gt <- vcf@gt[true_ind, ]
+
+write.vcf(vcf, file = "MAF_Filtered.vcf.gz")
+
+```
+
+## Depth Plot
+
+```{r}
+
+vcf <- read.vcfR("MAF_Filtered.vcf.gz")
+dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+par(mar=c(12,4,4,2))
+boxplot(dp, col=2:8, las=3)
+title(ylab = "Depth (DP)")
+
+```
+
+
+## Converting VCFR object to genlight object
+
+
+```{r}
+
+library(adegenet)
+
+x <- vcfR2genlight(vcf)
+# pca1 <- glPca(x, parallel = FALSE)
+# saveRDS(pca1, file = "mypca_MAF_Filtered.RData")
+
+
+mypca <- readRDS("mypca_MAF_Filtered.RData")
+pcasores <- mypca$scores
+
+# rownames(pcasores)[grep("port", rownames(pcasores))] <- "Portugal"
+# rownames(pcasores)[grep("ntaiw", rownames(pcasores))] <- "N.Taiwan"
+# rownames(pcasores)[grep("staiw", rownames(pcasores))] <- "S.Taiwan"
+# rownames(pcasores)[grep("centtaiw", rownames(pcasores))] <- "Cent.Taiwan"
+# rownames(pcasores)[grep("nsw", rownames(pcasores))] <- "NSW"
+# rownames(pcasores)[grep("safrica", rownames(pcasores))] <- "SAfrica"
+# rownames(pcasores)[grep("nvietnam", rownames(pcasores))] <- "N.Vietnam"
+# rownames(pcasores)[grep("waus", rownames(pcasores))] <- "W.Aus"
+# rownames(pcasores)[grep("france", rownames(pcasores))] <- "France"
+# rownames(pcasores)[grep("italy", rownames(pcasores))] <- "Italy"
+# rownames(pcasores)[grep("domrep", rownames(pcasores))] <- "DomRep"
+# rownames(pcasores)[grep("chile", rownames(pcasores))] <- "Chile"
+# rownames(pcasores)[grep("newguin", rownames(pcasores))] <- "PNG"
+# rownames(pcasores)[grep("tasaus", rownames(pcasores))] <- "Tasmania"
+# rownames(pcasores)[grep("queensaus", rownames(pcasores))] <- "Queensland"
+# rownames(pcasores)[grep("netaiw", rownames(pcasores))] <- "NE.Taiwan"
+
+rownames(pcasores)[grep("port", rownames(pcasores))] <- "Portugal"
+rownames(pcasores)[grep("taiw", rownames(pcasores))] <- "Taiwan"
+rownames(pcasores)[grep("safrica", rownames(pcasores))] <- "SAfrica"
+rownames(pcasores)[grep("france", rownames(pcasores))] <- "France"
+rownames(pcasores)[grep("italy", rownames(pcasores))] <- "Italy"
+rownames(pcasores)[grep("domrep", rownames(pcasores))] <- "DomRep"
+rownames(pcasores)[grep("chile", rownames(pcasores))] <- "Chile"
+rownames(pcasores)[grep("newguin", rownames(pcasores))] <- "PNG"
+rownames(pcasores)[grep(c("queensaus|tasaus|waus|nswalesaus"), rownames(pcasores))] <- "Australia"
+rownames(pcasores)[grep("nvietnam", rownames(pcasores))] <- "Vietnam"
+
+
+df <- mypca$scores
+df <- data.frame(Country = c(rownames(pcasores)), df)
+
+library(ggfortify)
+
+rownames(pcasores)[grep("Portugal|France|Italy", rownames(pcasores))] <- "Europe"
+rownames(pcasores)[grep("Taiwan|Vietnam", rownames(pcasores))] <- "Asia"
+rownames(pcasores)[grep("SAfrica", rownames(pcasores))] <- "Africa"
+rownames(pcasores)[grep("Chile" , rownames(pcasores))] <- "South America"
+rownames(pcasores)[grep("Australia" , rownames(pcasores))] <- "Australia"
+rownames(pcasores)[grep("PNG" , rownames(pcasores))] <- "PNG"
+rownames(pcasores)[grep("DomRep" , rownames(pcasores))] <- "DomRep"
+
+df <- data.frame(Continent = c(rownames(pcasores)), df)
+
+newdf <- df[,c(3,4)]
+
+```
+
+## PCA by country 
+
+```{r}
+
+
+pcaplot_country <- autoplot(prcomp(newdf), data = df, size = 4, colour = "Country")
+pcaplot_country
+
+```
+
+## PCA by Continent
+
+```{r}
+
+pcaplot_contient <- autoplot(prcomp(newdf), data = df, size = 4, colour = "Continent")
+pcaplot_contient
+
+```
+
+## DAPC plot
+
+```{r}
+
+pop(x) <- df$Continent
+dapc_continent <- dapc(x, pop = pop(x), n.pca=NULL, n.da=NULL, parallel = F, glPca = mypca)
+
+saveRDS(dapc_continent, file = "MAF_mydapc_contient.RData", compress = FALSE)
+
+dapc_continent <- readRDS("MAF_mydapc_contient.RData")
+
+library(RColorBrewer)
+myCol <- brewer.pal(nPop(x), "Dark2") %>% setNames(popNames(x))
+
+scatter.dapc(dapc_continent, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = TRUE, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+
+
+pop(x) <- df$Country
+dapc_country <- dapc(x, pop = pop(x), n.pca=NULL, n.da=NULL, parallel = F, glPca = mypca)
+
+saveRDS(dapc_country, file = "MAF_mydapc_country.RData", compress = FALSE)
+
+dapc_country <- readRDS("MAF_mydapc_country.RData")
+
+library(RColorBrewer)
+myCol <- brewer.pal(nPop(x), "Set3") %>% setNames(popNames(x))
+
+scatter.dapc(dapc_country,clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = TRUE, 
+        cleg = 0.9, inset.solid = 1, xax = 1, yax = 2, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+
+
+pop(x) <- df$Country
+newpop <- popsub(x, blacklist = c("Chile", "Vietnam", "Taiwan"))
+
+newdapc <- dapc(newpop, pop = pop(newpop), n.pca = NULL, n.da = NULL, parallel = FALSE)
+
+
+scatter.dapc(newdapc, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = TRUE, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+
+
+```
+
+
+## Index of association
+
+```{r, eval=FALSE, include=FALSE}
+library(poppr)
+
+ia_pop <- seppop(x) %>% lapply(samp.ia) 
+
+
+
+
+
+```
+
+
+## Minimum spanning network
+
+```{r, eval=FALSE, include=FALSE}
+
+library(RColorBrewer)
+
+pop(x) <- df$Continent
+myCol <- brewer.pal(nPop(x), "Paired") %>% setNames(popNames(x))
+msn <- poppr.msn(x, distmat = bitwise.dist(x), palette = rainbow)
+
+set.seed(99)
+plot_poppr_msn(x, msn, inds = "nepal")
+
+
+
+```
+
+
+
+```{r, eval=FALSE, include=FALSE}
+
+library(PopGenome)
+
+snp <- readData("MAF_Filtered.vcf.gz", format = "VCF.GZ")
+get.sum.data(vcf)
+
+
+```
+
+## Allele frequency distribution
+
+```{r, eval=FALSE, include=FALSE}
+
+myFreq <- glMean(x)
+myFreq <- c(myFreq, 1-myFreq)
+hist(myFreq, proba=TRUE, col="darkseagreen3", xlab="Allele frequencies",
+main="Distribution of allele frequencies", nclass=20)
+temp <- density(myFreq, bw=.05)
+lines(temp$x, temp$y*2,lwd=3)
+
+
+library(ape)
+
+
+tre <- nj(dist(as.matrix(x)))
+tre
+
+plot(tre, typ="fan", cex=0.7)
+plot(tre)
+
+
+```
+
+
+
+
+
+
+
+
+## Pairwise fst
+
+```{r}
+
+vcf_genind <- vcfR2genind(vcf)
+
+saveRDS(vcf_genind, file = "vcf_genind.RData", compress = FALSE)
+
+vcf_genind <- readRDs("vcf_genind.RData")
+
+vcf_genind@pop <- pop(x)
+
+seppop(vcf_genind)
+
+```
+
+
+
+```{r}
+
+library(strataG)
+Sys.setenv(PATH = paste("C:/Program Files (x86)/Structure2.3.4/bin", Sys.getenv("PATH"), sep = ";"))
+Sys.setenv(PATH = paste("C:/Users/Shankar/Downloads/CLUMPP_Windows.1.1.2/", Sys.getenv("PATH"), sep = ";"))
+vcf.gtype <- genind2gtypes(vcf_genind)
+
+
+sr <- structureRun(vcf.gtype, k.range  = 1:4, burnin = 500, num.k.rep = 1, noadmix = F, numreps = 1000)
+
+evno <- evanno(sr, plot = T)
+
+qmat2 <- clumpp(sr, k = 2, sim.stat = "g.prime", repeats = 10)
+
+
+```
+
