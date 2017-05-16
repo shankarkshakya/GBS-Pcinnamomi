@@ -1,5 +1,5 @@
 ---
-title: "P.cinnamomi GBS analysis"
+title: "P.cinnamomi GBS analysis using TASSEL output"
 author: "Shankar K Shakya"
 date: "May 9, 2017"
 output: html_document
@@ -154,10 +154,10 @@ library(adegenet)
 
 x <- vcfR2genlight(vcf)
 # pca1 <- glPca(x, parallel = FALSE)
-# saveRDS(pca1, file = "mypca_MAF_Filtered.RData")
+# saveRDS(pca1, file = "mypca_MAF_Filtered_nf20.RData")
 
 
-mypca <- readRDS("mypca_MAF_Filtered.RData")
+mypca <- readRDS("mypca_MAF_Filtered_nf20.RData")
 pcasores <- mypca$scores
 
 # rownames(pcasores)[grep("port", rownames(pcasores))] <- "Portugal"
@@ -279,12 +279,16 @@ scatter.dapc(newdapc, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FAL
 
 ## Index of association
 
-```{r, eval=FALSE, include=FALSE}
+```{r IA, echo=TRUE}
 library(poppr)
 
+pop(x) <- df$Country
 ia_pop <- seppop(x) %>% lapply(samp.ia) 
 
+lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
 
+
+#mean <- lapply(ia_pop, function(x) mean(na.omit(x)))
 
 
 
@@ -293,32 +297,31 @@ ia_pop <- seppop(x) %>% lapply(samp.ia)
 
 ## Minimum spanning network
 
-```{r, eval=FALSE, include=FALSE}
+```{r MSN, echo=TRUE}
 
 library(RColorBrewer)
 
 pop(x) <- df$Continent
-myCol <- brewer.pal(nPop(x), "Paired") %>% setNames(popNames(x))
+# myCol <- brewer.pal(nPop(x), "Dark2") %>% setNames(popNames(x))
 msn <- poppr.msn(x, distmat = bitwise.dist(x), palette = rainbow)
 
 set.seed(99)
 plot_poppr_msn(x, msn, inds = "nepal")
 
 
+library(pals)
+pop(x) <- df$Country
 
-```
-
-
-
-```{r, eval=FALSE, include=FALSE}
-
-library(PopGenome)
-
-snp <- readData("MAF_Filtered.vcf.gz", format = "VCF.GZ")
-get.sum.data(vcf)
+myCol <- glasbey(n = 10) %>% setNames(popNames(x))
+msn <- poppr.msn(x, distmat = bitwise.dist(x), palette = myCol)
+set.seed(99)
+plot_poppr_msn(x, msn, inds = "nepal")
 
 
 ```
+
+
+
 
 ## Allele frequency distribution
 
@@ -339,37 +342,75 @@ tre <- nj(dist(as.matrix(x)))
 tre
 
 plot(tre, typ="fan", cex=0.7)
-plot(tre)
+
 
 
 ```
-
-
-
-
-
 
 
 
 ## Pairwise fst
 
-```{r}
+```{r, eval=FALSE, include=FALSE}
 
 vcf_genind <- vcfR2genind(vcf)
-
-saveRDS(vcf_genind, file = "vcf_genind.RData", compress = FALSE)
-
-vcf_genind <- readRDs("vcf_genind.RData")
-
-vcf_genind@pop <- pop(x)
-
+pop(vcf_genind) <- df$Country
 seppop(vcf_genind)
+
+
+
+
+```
+
+
+## Heterozygosity
+
+```{r Heterozygosity, echo=TRUE}
+
+gt <- extract.gt(vcf)
+hets <- is.het(gt, na_is_false = TRUE)
+
+sum_het <- colSums(hets)
+
+sum_het.df <- as.data.frame(sum_het)
+sum_het.df <- cbind(Isolate = rownames(sum_het.df), Country = df$Country, Heterozygosity = sum_het.df)
+rownames(sum_het.df) <- NULL
+
+ggplot(sum_het.df, aes(x = Country, y = sum_het, fill = Country)) + geom_boxplot(outlier.shape = NA) + geom_jitter() +
+  ggtitle("Heterozygosity") +
+  labs(x = "Country", y = "Number of heterozygous position") +
+  theme(axis.text.x = element_text(size =12, angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size =12)) + theme(legend.position = "none") +
+  theme(plot.title = element_text(size = 30)) +
+  theme(axis.title = element_text(size = 25))
+
 
 ```
 
 
 
-```{r}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r structure, eval=FALSE, include=FALSE}
 
 library(strataG)
 Sys.setenv(PATH = paste("C:/Program Files (x86)/Structure2.3.4/bin", Sys.getenv("PATH"), sep = ";"))
@@ -382,7 +423,7 @@ sr <- structureRun(vcf.gtype, k.range  = 1:4, burnin = 500, num.k.rep = 1, noadm
 evno <- evanno(sr, plot = T)
 
 qmat2 <- clumpp(sr, k = 2, sim.stat = "g.prime", repeats = 10)
-
+plot(qmat2)
 
 ```
 
