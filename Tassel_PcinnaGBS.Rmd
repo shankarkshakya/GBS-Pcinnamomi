@@ -31,6 +31,49 @@ vcf@gt <- gt
 vcf
 
 
+library(reshape2)
+library(ggplot2) 
+library(cowplot)
+
+dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+
+dpf <- melt(dp, varnames=c('Index', 'Sample'), value.name = 'Depth', na.rm=TRUE)
+dpf <- dpf[ dpf$Depth > 0,]
+
+samps_per_row <- 16
+myRows <- ceiling(length(levels(dpf$Sample))/samps_per_row)
+myList <- vector(mode = "list", length = myRows)
+
+for(i in 1:myRows){
+  myIndex <- c(i*samps_per_row - samps_per_row + 1):c(i*samps_per_row)
+  myIndex <- myIndex[myIndex <= length(levels(dpf$Sample))]
+  myLevels <- levels(dpf$Sample)[myIndex]
+  myRegex <- paste(myLevels, collapse = "$|^")
+  myRegex <- paste("^", myRegex, "$", sep = "")
+  myList[[i]] <- dpf[grep(myRegex, dpf$Sample),]
+  myList[[i]]$Sample <- factor(myList[[i]]$Sample)
+}
+
+# Create the plot.
+myPlots <- vector(mode = "list", length = myRows)
+for(i in 1:myRows){
+  myPlots[[i]] <- ggplot(myList[[i]], aes(x=Sample, y=Depth)) + 
+                  geom_violin(fill="#8dd3c7", adjust=1.0, scale = "count", trim=TRUE)
+
+  myPlots[[i]] <- myPlots[[i]] + theme_bw()
+  myPlots[[i]] <- myPlots[[i]] + theme(axis.title.x = element_blank(), 
+                  axis.text.x = element_text(angle = 60, hjust = 1))
+  myPlots[[i]] <- myPlots[[i]] + scale_y_continuous(trans=scales::log2_trans(), 
+                  breaks=c(1, 10, 100, 800),
+                  minor_breaks=c(1:10, 2:10*10, 2:8*100))
+  myPlots[[i]] <- myPlots[[i]] + theme( panel.grid.major.y=element_line(color = "#A9A9A9", size=0.6) )
+  myPlots[[i]] <- myPlots[[i]] + theme( panel.grid.minor.y=element_line(color = "#C0C0C0", size=0.2) )
+}
+
+plot_grid(plotlist = myPlots, nrow = myRows)
+
+
+
 ```
 
 
@@ -39,7 +82,7 @@ vcf
 ```{r}
 
 dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
-
+#dp <- dp[1:10, 1:10]
 quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.8), na.rm=TRUE)
 dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[1,])
 dp[dp2 < 0] <- NA
@@ -64,7 +107,7 @@ vcf ## 48.1% missing data
 myMiss <- apply(dp, MARGIN = 2, function(x){ sum( is.na(x) ) } )
 myMiss <- myMiss / nrow(dp)
 vcf@gt <- vcf@gt[, c(TRUE, myMiss < 0.6)]
-vcf #127 samples
+vcf 
 
 ```
 
@@ -76,7 +119,7 @@ vcf #127 samples
 myMiss <- apply(dp, MARGIN = 1, function(x){ sum( is.na(x) ) } )
 myMiss <- myMiss / ncol(dp)
 vcf <- vcf[myMiss < 0.2, ]
-vcf #29521
+vcf 
 
 
 
@@ -152,8 +195,8 @@ title(ylab = "Depth (DP)")
 
 library(adegenet)
 
-x <- vcfR2genlight(vcf)
-# pca1 <- glPca(x, parallel = FALSE)
+vcf.gl <- vcfR2genlight(vcf)
+# pca1 <- glPca(vcf.gl, parallel = FALSE)
 # saveRDS(pca1, file = "mypca_MAF_Filtered_nf20.RData")
 
 
@@ -231,30 +274,30 @@ pcaplot_contient
 
 ```{r}
 
-pop(x) <- df$Continent
-dapc_continent <- dapc(x, pop = pop(x), n.pca=NULL, n.da=NULL, parallel = F, glPca = mypca)
+pop(vcf.gl) <- df$Continent
+dapc_continent <- dapc(vcf.gl, pop = pop(vcf.gl), n.pca=NULL, n.da=NULL, parallel = F, glPca = mypca)
 
 saveRDS(dapc_continent, file = "MAF_mydapc_contient.RData", compress = FALSE)
 
 dapc_continent <- readRDS("MAF_mydapc_contient.RData")
 
 library(RColorBrewer)
-myCol <- brewer.pal(nPop(x), "Dark2") %>% setNames(popNames(x))
+myCol <- brewer.pal(nPop(vcf.gl), "Dark2") %>% setNames(popNames(vcf.gl))
 
 scatter.dapc(dapc_continent, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
         posi.pca = "topright", posi.leg = "topleft", legend = TRUE, 
         cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
 
 
-pop(x) <- df$Country
-dapc_country <- dapc(x, pop = pop(x), n.pca=NULL, n.da=NULL, parallel = F, glPca = mypca)
+pop(vcf.gl) <- df$Country
+dapc_country <- dapc(vcf.gl, pop = pop(vcf.gl), n.pca=NULL, n.da=NULL, parallel = F, glPca = mypca)
 
 saveRDS(dapc_country, file = "MAF_mydapc_country.RData", compress = FALSE)
 
 dapc_country <- readRDS("MAF_mydapc_country.RData")
 
 library(RColorBrewer)
-myCol <- brewer.pal(nPop(x), "Set3") %>% setNames(popNames(x))
+myCol <- brewer.pal(nPop(vcf.gl), "Set3") %>% setNames(popNames(vcf.gl))
 
 scatter.dapc(dapc_country,clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
         posi.pca = "topright", posi.leg = "topleft", legend = TRUE, 
@@ -262,8 +305,8 @@ scatter.dapc(dapc_country,clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da =
 
 
 
-pop(x) <- df$Country
-newpop <- popsub(x, blacklist = c("Chile", "Vietnam", "Taiwan"))
+pop(vcf.gl) <- df$Country
+newpop <- popsub(vcf.gl, blacklist = c("Chile", "Vietnam", "Taiwan"))
 
 newdapc <- dapc(newpop, pop = pop(newpop), n.pca = NULL, n.da = NULL, parallel = FALSE)
 
@@ -282,10 +325,11 @@ scatter.dapc(newdapc, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FAL
 ```{r IA, echo=TRUE}
 library(poppr)
 
-pop(x) <- df$Country
-ia_pop <- seppop(x) %>% lapply(samp.ia) 
+pop(vcf.gl) <- df$Country
+ia_pop <- seppop(vcf.gl) %>% lapply(samp.ia) 
 
-lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
+par(mfrow = c(2,5))
+plot_list <- lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
 
 
 #mean <- lapply(ia_pop, function(x) mean(na.omit(x)))
@@ -301,21 +345,21 @@ lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
 
 library(RColorBrewer)
 
-pop(x) <- df$Continent
-# myCol <- brewer.pal(nPop(x), "Dark2") %>% setNames(popNames(x))
-msn <- poppr.msn(x, distmat = bitwise.dist(x), palette = rainbow)
+pop(vcf.gl) <- df$Continent
+# myCol <- brewer.pal(nPop(vcf.gl), "Dark2") %>% setNames(popNames(vcf.gl))
+msn <- poppr.msn(vcf.gl, distmat = bitwise.dist(vcf.gl), palette = rainbow)
 
 set.seed(99)
-plot_poppr_msn(x, msn, inds = "nepal")
+plot_poppr_msn(vcf.gl, msn, inds = "nepal")
 
 
 library(pals)
-pop(x) <- df$Country
+pop(vcf.gl) <- df$Country
 
-myCol <- glasbey(n = 10) %>% setNames(popNames(x))
-msn <- poppr.msn(x, distmat = bitwise.dist(x), palette = myCol)
+myCol <- glasbey(n = 10) %>% setNames(popNames(vcf.gl))
+msn <- poppr.msn(vcf.gl, distmat = bitwise.dist(vcf.gl), palette = myCol)
 set.seed(99)
-plot_poppr_msn(x, msn, inds = "nepal")
+plot_poppr_msn(vcf.gl, msn, inds = "nepal")
 
 
 ```
@@ -327,7 +371,7 @@ plot_poppr_msn(x, msn, inds = "nepal")
 
 ```{r, eval=FALSE, include=FALSE}
 
-myFreq <- glMean(x)
+myFreq <- glMean(vcf.gl)
 myFreq <- c(myFreq, 1-myFreq)
 hist(myFreq, proba=TRUE, col="darkseagreen3", xlab="Allele frequencies",
 main="Distribution of allele frequencies", nclass=20)
@@ -338,7 +382,7 @@ lines(temp$x, temp$y*2,lwd=3)
 library(ape)
 
 
-tre <- nj(dist(as.matrix(x)))
+tre <- nj(dist(as.matrix(vcf.gl)))
 tre
 
 plot(tre, typ="fan", cex=0.7)
@@ -358,6 +402,70 @@ pop(vcf_genind) <- df$Country
 seppop(vcf_genind)
 
 
+source("genetic_diff.R")
+
+myDiff <- genetic_diff(vcf, df$Country)
+
+dpf <- melt(myDiff[,c(1,27)], varnames=c('Index', 'Sample'), value.name = 'Depth', na.rm=TRUE)
+
+p <- ggplot(dpf, aes(x=variable, y=Depth)) + geom_violin(fill="#8dd3c7")
+p <- p + xlab("")
+p <- p + ylab("")
+p <- p + theme_bw()
+
+
+
+vcf_list <- vector("list", length(unique(df$Country)))
+names(vcf_list) <- unique(df$Country)
+
+grep_list <-  list("port", "taiw", c("queensaus|tasaus|waus|nswalesaus"), "safrica", "nvietnam", "newguin", "chile", "italy", "france", "domrep")
+
+for (i in (1:length(vcf_list))) {
+  pop <- names(vcf_list[i])
+  vcf_pop <- vcf
+  gt <- vcf_pop@gt
+  cols <- grep(grep_list[[i]], colnames(gt))
+    
+  vcf_pop@gt <- gt[,c(1,cols)]
+  
+  vcf_list[[i]] <- vcf_pop
+
+
+}
+
+vcf12 <- vcf
+vcf1 <- vcf_list[[1]]
+pop_name1 <- names(vcf_list)[1]
+samp_num1 <- ncol(vcf1@gt) -1
+pop1 <- rep(pop_name1, samp_num1)
+
+vcf2 <- vcf_list[[2]]
+pop_name2 <- names(vcf_list)[2]
+samp_num2 <- ncol(vcf2@gt) - 1
+pop2 <- rep(pop_name2, samp_num2)
+
+pop <- c(pop1, pop2)
+
+vcf12@gt <- cbind(vcf_list[[1]]@gt, vcf_list[[2]]@gt[, -1])
+
+myDiff <- genetic_diff(vcf12, pops = factor(pop))
+head(myDiff)
+ 
+myDiff <- myDiff[myDiff$Hs_Portugal > 0 & myDiff$Hs_Taiwan > 0 , ] 
+
+myDiff.melt <- melt(myDiff[1:1000,c(1,11)])
+
+
+ggplot(data = myDiff.melt, aes(x = CHROM, y = value)) + geom_boxplot()
+
+
+dpf <- melt(myDiff[,c(1,11)], varnames=c('Index', 'Sample'), value.name = 'Depth', na.rm=TRUE)
+
+p <- ggplot(dpf, aes(x=variable, y=Depth)) + geom_violin(fill="#8dd3c7")
+p <- p + xlab("")
+p <- p + ylab("")
+p <- p + theme_bw()
+p
 
 
 ```
