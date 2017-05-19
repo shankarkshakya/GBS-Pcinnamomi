@@ -37,6 +37,7 @@ library(cowplot)
 
 dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
 
+
 dpf <- melt(dp, varnames=c('Index', 'Sample'), value.name = 'Depth', na.rm=TRUE)
 dpf <- dpf[ dpf$Depth > 0,]
 
@@ -184,6 +185,9 @@ dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
 par(mar=c(12,4,4,2))
 boxplot(dp, col=2:8, las=3)
 title(ylab = "Depth (DP)")
+
+dp <- dp[,1:64]
+
 
 ```
 
@@ -393,32 +397,36 @@ plot(tre, typ="fan", cex=0.7)
 
 
 
-## Pairwise fst
+## Population differentiation
 
 ```{r, eval=FALSE, include=FALSE}
-
-vcf_genind <- vcfR2genind(vcf)
-pop(vcf_genind) <- df$Country
-seppop(vcf_genind)
-
 
 source("genetic_diff.R")
 
 myDiff <- genetic_diff(vcf, df$Country)
 
-dpf <- melt(myDiff[,c(1,27)], varnames=c('Index', 'Sample'), value.name = 'Depth', na.rm=TRUE)
 
-p <- ggplot(dpf, aes(x=variable, y=Depth)) + geom_violin(fill="#8dd3c7")
-p <- p + xlab("")
-p <- p + ylab("")
+# myDiff <- myDiff[myDiff$Hs_Australia > 0 & myDiff$Hs_Chile > 0 & myDiff$Hs_DomRep > 0 & myDiff$Hs_France > 0 & myDiff$Hs_Italy > 0 & myDiff$Hs_PNG > 0 & myDiff$Hs_Portugal > 0 & myDiff$Hs_SAfrica > 0 & myDiff$Hs_Taiwan > 0 & myDiff$Hs_Vietnam > 0 , ]
+# 
+
+dpf <- melt(myDiff[ , c("CHROM", "Gst", "Gprimest")] , na.rm=TRUE)
+
+dpf <- melt(myDiff[ , c(1, 3:12, 27)] , na.rm=TRUE)
+
+p <- ggplot(dpf, aes(x=variable, y=value)) + geom_violin(fill="#8dd3c7")
+p <- p + xlab("Population differentiation statistics")
+p <- p + ylab("Value")
 p <- p + theme_bw()
-
+p
 
 
 vcf_list <- vector("list", length(unique(df$Country)))
 names(vcf_list) <- unique(df$Country)
 
 grep_list <-  list("port", "taiw", c("queensaus|tasaus|waus|nswalesaus"), "safrica", "nvietnam", "newguin", "chile", "italy", "france", "domrep")
+
+grep_list <- list(c("port|france|italy"), c("taiw|nvietnam"), c("queensaus|tasaus|waus|nswalesaus"), "safrica", "newguin", "chile", "domrep")
+
 
 for (i in (1:length(vcf_list))) {
   pop <- names(vcf_list[i])
@@ -433,45 +441,123 @@ for (i in (1:length(vcf_list))) {
 
 }
 
-vcf12 <- vcf
-vcf1 <- vcf_list[[1]]
-pop_name1 <- names(vcf_list)[1]
-samp_num1 <- ncol(vcf1@gt) -1
-pop1 <- rep(pop_name1, samp_num1)
-
-vcf2 <- vcf_list[[2]]
-pop_name2 <- names(vcf_list)[2]
-samp_num2 <- ncol(vcf2@gt) - 1
-pop2 <- rep(pop_name2, samp_num2)
-
-pop <- c(pop1, pop2)
-
-vcf12@gt <- cbind(vcf_list[[1]]@gt, vcf_list[[2]]@gt[, -1])
-
-myDiff <- genetic_diff(vcf12, pops = factor(pop))
-head(myDiff)
- 
-myDiff <- myDiff[myDiff$Hs_Portugal > 0 & myDiff$Hs_Taiwan > 0 , ] 
-
-myDiff.melt <- melt(myDiff[1:1000,c(1,11)])
+saveRDS(vcf_list, file = "vcf_list.RData", compress = FALSE)
 
 
-ggplot(data = myDiff.melt, aes(x = CHROM, y = value)) + geom_boxplot()
+vcf_list <- readRDS("vcf_list.RData")
+
+Pairs <- function(vcf_list) {
+  pop <- names(vcf_list)
+  pairs <- t(combn(pop,2))
+  colnames(pairs) <- c("pop1", "pop2")
+  as.data.frame(pairs, stringsAsFactors = FALSE)
+}
+
+pop.pairs <- Pairs(vcf_list)
+
+pop.pairs$Pop_Combination <- apply(pop.pairs[, c("pop1", "pop2")], 1, paste, collapse = "-")
+
+out <- vector("list", nrow(pop.pairs))
+names(out) <- pop.pairs$Pop_Combination
+
+temp.vcf <- vcf_list[[1]]
+
+source("genetic_diff.R")
+for (i in 1:nrow(pop.pairs)) {
+  
+  pair <- unlist(pop.pairs[i, ])
+  
+  pop1 <- pair[1]
+  names(pop1) <- NULL
+  vcf1 <- vcf_list[[grep(pop1, names(vcf_list))]]
+  samp_num1 <- ncol(vcf1@gt) -1
+  pop_len1 <- rep(pop1, samp_num1)
+  
+  
+  pop2 <- pair[2]
+  names(pop2) <- NULL
+  vcf2 <- vcf_list[[grep(pop2, names(vcf_list))]]
+  samp_num2 <- ncol(vcf2@gt) -1
+  pop_len2 <- rep(pop2, samp_num2)
+  
+  pop <- c(pop_len1, pop_len2)
+  
+  
+  temp.vcf@gt <- cbind(vcf1@gt, vcf2@gt[, -1])
+  
+  myDiff <- genetic_diff(temp.vcf, pops = factor(pop))
+  out[[i]] <- myDiff
+  
+  
+}
 
 
-dpf <- melt(myDiff[,c(1,11)], varnames=c('Index', 'Sample'), value.name = 'Depth', na.rm=TRUE)
+pairwise_diff_mat <- function(out) {
 
-p <- ggplot(dpf, aes(x=variable, y=Depth)) + geom_violin(fill="#8dd3c7")
-p <- p + xlab("")
-p <- p + ylab("")
-p <- p + theme_bw()
-p
+pairwise_gst_list <- lapply(out, function(x) colMeans(x[11], na.rm = TRUE))
+pop.pairs$Gstprime <- unlist(pairwise_gst_list)
+pop.pairs
+
+df <- pop.pairs[, 3:4]
+
+mat <- matrix(NA, nrow = length(vcf_list), ncol = length(vcf_list))
+rownames(mat) <- names(vcf_list)
+colnames(mat) <- names(vcf_list)
+mat[lower.tri(mat)] <- df$Gstprime
+mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
+mat[is.na(mat)] <- 0
+
+return(mat)
+
+}
+
+pairwise_mat <- pairwise_diff_mat(out)
+
+
+library(ape)
+myNj <- ape::nj(as.dist(pairwise_mat))
+myNj$edge.length[myNj$edge.length < 0] <- 0
+
+plot(myNj, edge.width = 2)
+add.scale.bar()
+
+plot(hclust(dist(pairwise_mat)))
+
+
+library(reshape2)
+pairwise_mat[upper.tri(pairwise_mat)] <- NA
+lower_tri <- melt(pairwise_mat, na.rm = TRUE)
+
+library(ggplot2)
+ggheatmap <- ggplot(lower_tri, aes(x = Var1, y = Var2, fill = value)) + geom_tile(color = "white") +
+  scale_fill_gradient(low = "green", high = "red" , space = "Lab", name="Pairwise GSTprime") + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, size = 12, hjust = 1)) + coord_fixed() +
+  labs(x = "Population", y = "Population") +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 12)) +
+  geom_text(aes(label = round(value, 2)))
+
+ggheatmap
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```
 
 
-## Heterozygosity
+## Number of heterozygous positions
 
 ```{r Heterozygosity, echo=TRUE}
 
@@ -491,7 +577,6 @@ ggplot(sum_het.df, aes(x = Country, y = sum_het, fill = Country)) + geom_boxplot
   theme(axis.text.y = element_text(size =12)) + theme(legend.position = "none") +
   theme(plot.title = element_text(size = 30)) +
   theme(axis.title = element_text(size = 25))
-
 
 ```
 
