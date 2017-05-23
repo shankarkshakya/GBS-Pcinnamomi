@@ -1,0 +1,494 @@
+---
+title: "gatk version2"
+author: "Shankar K Shakya"
+date: "May 22, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### GATK generated variant analysis
+
+```{r}
+rm(list = ls())
+library(vcfR)
+vcf.gatk <- read.vcfR("Pcinna144.vcf")
+
+# 144 samples, 178110 variants
+
+```
+
+## Filtering samples by depth
+
+Varaints that were sequenced at unusual depth, i.e less than 10 % quantile and greater than 80% quantile is converted to NA. Minimum depth of 4x is maintained per variant.
+
+```{r}
+dp <- extract.gt(vcf.gatk, element = "DP", as.numeric=TRUE)
+
+quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.8), na.rm=TRUE)
+dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[1,])
+dp[dp2 < 0] <- NA
+
+dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[2,])
+dp[dp2 > 0] <- NA
+
+dp[dp < 4] <- NA
+
+vcf.gatk@gt[,-1][ is.na(dp) == TRUE ] <- NA
+vcf.gatk
+
+write.vcf(vcf.gatk, file = "Pcinna144_Q0.1-0.8_min4X.vcf.gz")
+
+```
+
+
+## Omitting variants
+
+
+```{r, eval=FALSE, include=FALSE}
+
+vcf.gatk <- read.vcfR("Pcinna144_Q0.1-0.8_min4X.vcf.gz")
+dp <- extract.gt(vcf.gatk, element = "DP", as.numeric=TRUE)
+
+myMiss <- apply(dp, MARGIN = 1, function(x){ sum( is.na(x) ) } )
+myMiss <- myMiss / ncol(dp)
+vcf.gatk <- vcf.gatk[myMiss < 0.1, ]
+vcf.gatk 
+
+```
+
+
+## Omitting samples
+
+```{r, eval=FALSE, include=FALSE}
+
+myMiss <- apply(dp, MARGIN = 2, function(x){ sum( is.na(x))} )
+myMiss <- myMiss / nrow(dp)
+vcf.gatk@gt <- vcf.gatk@gt[, c(TRUE, myMiss < 0.7)]
+vcf.gatk 
+
+```
+
+
+
+## Filtering by Minor allele frequency
+
+```{r, eval=FALSE, include=FALSE}
+
+mymaf <- maf(vcf.gatk, element = 2)
+mymaf <- mymaf[mymaf[,4] > 0.05, ]
+
+vcf.gatk@fix[,3] <- paste(vcf.gatk@fix[,1], vcf.gatk@fix[,2], sep = "_")
+
+fix <- vcf.gatk@fix[vcf.gatk@fix[,3] %in% rownames(mymaf), ]
+true_ind <- which(vcf.gatk@fix[,3] %in% rownames(mymaf))
+vcf.gatk@fix <- vcf.gatk@fix[true_ind, ]
+
+vcf.gatk@gt <- vcf.gatk@gt[true_ind, ]
+# 
+write.vcf(vcf.gatk, file = "MAF_Filtered.vcf.gatk6262.gz")
+
+```
+
+## Depth Plot
+
+```{r}
+
+vcf.gatk <- read.vcfR("MAF_Filtered.vcf.gatk6262.gz")
+dp <- extract.gt(vcf.gatk, element = "DP", as.numeric=TRUE)
+par(mar=c(12,4,4,2))
+boxplot(dp, col=2:8, las=3)
+title(ylab = "Depth (DP)")
+
+```
+
+
+## Converting VCFR object to genlight object
+
+
+```{r}
+
+library(adegenet)
+
+vcf.gatk.gl <- vcfR2genlight(vcf.gatk)
+pca1 <- glPca(vcf.gatk.gl, parallel = FALSE)
+#saveRDS(pca1, file = "vcf.gatk.nf20_pca.RData")
+
+mypca <- readRDS("vcf.gatk.nf20_pca.RData")
+mypca <- pca1
+
+pcasores <- mypca$scores
+rownames(pcasores) <- unlist(strsplit(rownames(pcasores), split = ".fq"))
+
+# rownames(pcasores)[grep("port", rownames(pcasores))] <- "Portugal"
+# rownames(pcasores)[grep("ntaiw", rownames(pcasores))] <- "N.Taiwan"
+# rownames(pcasores)[grep("staiw", rownames(pcasores))] <- "S.Taiwan"
+# rownames(pcasores)[grep("centtaiw", rownames(pcasores))] <- "Cent.Taiwan"
+# rownames(pcasores)[grep("nsw", rownames(pcasores))] <- "NSW"
+# rownames(pcasores)[grep("safrica", rownames(pcasores))] <- "SAfrica"
+# rownames(pcasores)[grep("nvietnam", rownames(pcasores))] <- "N.Vietnam"
+# rownames(pcasores)[grep("waus", rownames(pcasores))] <- "W.Aus"
+# rownames(pcasores)[grep("france", rownames(pcasores))] <- "France"
+# rownames(pcasores)[grep("italy", rownames(pcasores))] <- "Italy"
+# rownames(pcasores)[grep("domrep", rownames(pcasores))] <- "DomRep"
+# rownames(pcasores)[grep("chile", rownames(pcasores))] <- "Chile"
+# rownames(pcasores)[grep("newguin", rownames(pcasores))] <- "PNG"
+# rownames(pcasores)[grep("tasaus", rownames(pcasores))] <- "Tasmania"
+# rownames(pcasores)[grep("queensaus", rownames(pcasores))] <- "Queensland"
+# rownames(pcasores)[grep("netaiw", rownames(pcasores))] <- "NE.Taiwan"
+
+# rownames(pcasores)[grep("Port", rownames(pcasores))] <- "Portugal"
+# rownames(pcasores)[grep("Taiw", rownames(pcasores))] <- "Taiwan"
+# rownames(pcasores)[grep("SAfrica", rownames(pcasores))] <- "SAfrica"
+# rownames(pcasores)[grep("France", rownames(pcasores))] <- "France"
+# rownames(pcasores)[grep("Italy", rownames(pcasores))] <- "Italy"
+# rownames(pcasores)[grep("DomRep", rownames(pcasores))] <- "DomRep"
+# rownames(pcasores)[grep("Chile", rownames(pcasores))] <- "Chile"
+# rownames(pcasores)[grep("NewGuin", rownames(pcasores))] <- "PNG"
+# rownames(pcasores)[grep(c("QueensAus|TasAus|WAus|NSWalesAus"), rownames(pcasores))] <- "Australia"
+# rownames(pcasores)[grep("NVietnam", rownames(pcasores))] <- "Vietnam"
+# 
+# 
+# df <- mypca$scores
+# df <- data.frame(Country = c(rownames(pcasores)), df)
+# 
+# library(ggfortify)
+# 
+# rownames(pcasores)[grep("Portugal|France|Italy", rownames(pcasores))] <- "Europe"
+# rownames(pcasores)[grep("Taiwan|Vietnam", rownames(pcasores))] <- "Asia"
+# rownames(pcasores)[grep("SAfrica", rownames(pcasores))] <- "Africa"
+# rownames(pcasores)[grep("Chile" , rownames(pcasores))] <- "South America"
+# rownames(pcasores)[grep("Australia" , rownames(pcasores))] <- "Australia"
+# rownames(pcasores)[grep("PNG" , rownames(pcasores))] <- "PNG"
+# rownames(pcasores)[grep("DomRep" , rownames(pcasores))] <- "DomRep"
+# 
+# df <- data.frame(Continent = c(rownames(pcasores)), df)
+# 
+# newdf <- df[,c(3,4)]
+# 
+# 
+# head(pcasores)
+# rownames(pcasores)
+
+pop <- read.csv("Pcinna_pop.csv", header = TRUE)
+pop <- pop[pop$Isolate %in% rownames(pcasores), ]
+pop <- pop[match(rownames(pcasores), pop$Isolate), ]
+newpca_pop <- cbind(pop, pcasores)
+
+
+```
+
+
+## DAPC
+
+```{r}
+
+pop(vcf.gatk.gl) <- pop$Type.of.site
+mydapc <- dapc(vcf.gatk.gl, pop = pop(vcf.gatk.gl), parallel = F,  n.pca = NULL, n.da = NULL, glPca = mypca )
+
+
+library(pals)
+pop(vcf.gatk.gl) <- pop$Country
+
+myCol <- glasbey(n = 10) %>% setNames(popNames(vcf.gatk.gl))
+
+scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+
+
+newpop <- popsub(vcf.gatk.gl , blacklist = c("Chile", "Vietnam", "Taiwan"))
+
+newdapc <- dapc(newpop, pop = pop(newpop), n.pca = NULL, n.da = NULL, parallel = FALSE)
+
+
+scatter.dapc(newdapc, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = TRUE, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+
+```
+
+
+
+## Index of association
+
+```{r, eval=FALSE, include=FALSE}
+
+library(poppr)
+
+pop(vcf.gatk.gl) <- pop$Country
+ia_pop <- seppop(vcf.gatk.gl ) %>% lapply(samp.ia) 
+
+par(mfrow = c(2,5))
+lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
+
+
+
+
+mean <- lapply(ia_pop, function(x) mean(na.omit(x)))
+
+
+
+```
+
+
+## Minimum spanning network
+
+```{r, eval=FALSE, include=FALSE}
+
+library(RColorBrewer)
+
+pop(vcf.gatk.gl) <- pop$Country
+# myCol <- brewer.pal(nPop(vcf.gatk.gl ), "Dark2") %>% setNames(popNames(vcf.gatk.gl ))
+msn <- poppr.msn(vcf.gatk.gl , distmat = bitwise.dist(vcf.gatk.gl ), palette = rainbow)
+
+set.seed(99)
+plot_poppr_msn(vcf.gatk.gl , msn, inds = "nepal")
+
+
+
+library(pals)
+pop(vcf.gatk.gl ) <- pop$MT
+
+myCol <- glasbey(n = 10) %>% setNames(popNames(vcf.gatk.gl ))
+msn <- poppr.msn(vcf.gatk.gl , distmat = bitwise.dist(vcf.gatk.gl ), palette = myCol)
+set.seed(99)
+plot_poppr_msn(vcf.gatk.gl , msn, inds = "nepal")
+
+
+```
+
+
+
+
+## Allele frequency distribution
+
+```{r, eval=FALSE, include=FALSE}
+
+myFreq <- glMean(vcf.gatk.gl )
+myFreq <- c(myFreq, 1-myFreq)
+hist(myFreq, proba=TRUE, col="darkseagreen3", xlab="Allele frequencies",
+main="Distribution of allele frequencies", nclass=20)
+temp <- density(myFreq, bw=.05)
+lines(temp$x, temp$y*2,lwd=3)
+
+
+
+
+
+
+```
+
+
+
+## Population differentiation
+
+```{r, eval=FALSE, include=FALSE}
+
+source("genetic_diff.R")
+
+myDiff <- genetic_diff(vcf.gatk, pop$Country)
+
+dpf <- melt(myDiff[ , c("CHROM", "Gst", "Gprimest")] , na.rm=TRUE)
+
+#dpf <- melt(myDiff[ , c(1, 3:12, 27)] , na.rm=TRUE)
+
+p <- ggplot(dpf, aes(x=variable, y=value)) + geom_violin(fill="#8dd3c7")
+p <- p + xlab("Population differentiation statistics")
+p <- p + ylab("Value")
+p <- p + theme_bw()
+p
+
+
+vcf_list <- vector("list", length(unique(pop$Country)))
+names(vcf_list) <- unique(pop$Country)
+
+grep_list <-  list("port", "taiw", c("queensaus|tasaus|waus|nswalesaus"), "safrica", "nvietnam", "newguin", "chile", "italy", "france", "domrep")
+
+grep_list <- list(c("port|france|italy"), c("taiw|nvietnam"), c("queensaus|tasaus|waus|nswalesaus"), "safrica", "newguin", "chile", "domrep")
+
+
+for (i in (1:length(vcf_list))) {
+  pop <- names(vcf_list[i])
+  vcf_pop <- vcf.gatk
+  gt <- vcf_pop@gt
+  cols <- grep(grep_list[[i]], colnames(gt), ignore.case = TRUE)
+    
+  vcf_pop@gt <- gt[,c(1,cols)]
+  
+  vcf_list[[i]] <- vcf_pop
+
+
+}
+
+saveRDS(vcf_list, file = "vcf_list.RData", compress = FALSE)
+
+
+vcf_list <- readRDS("vcf_list.RData")
+
+Pairs <- function(vcf_list) {
+  pop <- names(vcf_list)
+  pairs <- t(combn(pop,2))
+  colnames(pairs) <- c("pop1", "pop2")
+  as.data.frame(pairs, stringsAsFactors = FALSE)
+}
+
+pop.pairs <- Pairs(vcf_list)
+
+pop.pairs$Pop_Combination <- apply(pop.pairs[, c("pop1", "pop2")], 1, paste, collapse = "-")
+
+out <- vector("list", nrow(pop.pairs))
+names(out) <- pop.pairs$Pop_Combination
+
+temp.vcf <- vcf_list[[1]]
+
+source("genetic_diff.R")
+for (i in 1:nrow(pop.pairs)) {
+  
+  pair <- unlist(pop.pairs[i, ])
+  
+  pop1 <- pair[1]
+  names(pop1) <- NULL
+  vcf1 <- vcf_list[[grep(pop1, names(vcf_list))]]
+  samp_num1 <- ncol(vcf1@gt) -1
+  pop_len1 <- rep(pop1, samp_num1)
+  
+  
+  pop2 <- pair[2]
+  names(pop2) <- NULL
+  vcf2 <- vcf_list[[grep(pop2, names(vcf_list))]]
+  samp_num2 <- ncol(vcf2@gt) -1
+  pop_len2 <- rep(pop2, samp_num2)
+  
+  pop <- c(pop_len1, pop_len2)
+  
+  
+  temp.vcf@gt <- cbind(vcf1@gt, vcf2@gt[, -1])
+  
+  myDiff <- genetic_diff(temp.vcf, pops = factor(pop))
+  out[[i]] <- myDiff
+  
+  
+}
+
+
+pairwise_diff_mat <- function(out) {
+
+pairwise_gst_list <- lapply(out, function(x) colMeans(x[11], na.rm = TRUE))
+pop.pairs$Gstprime <- unlist(pairwise_gst_list)
+pop.pairs
+
+pop <- pop.pairs[, 3:4]
+
+mat <- matrix(NA, nrow = length(vcf_list), ncol = length(vcf_list))
+rownames(mat) <- names(vcf_list)
+colnames(mat) <- names(vcf_list)
+mat[lower.tri(mat)] <- pop$Gstprime
+mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
+mat[is.na(mat)] <- 0
+
+return(mat)
+
+}
+
+pairwise_mat <- pairwise_diff_mat(out)
+
+
+library(reshape2)
+pairwise_mat[upper.tri(pairwise_mat)] <- NA
+lower_tri <- melt(pairwise_mat, na.rm = TRUE)
+
+library(ggplot2)
+ggheatmap <- ggplot(lower_tri, aes(x = Var1, y = Var2, fill = value)) + geom_tile(color = "white") +
+  scale_fill_gradient(low = "green", high = "red" , space = "Lab", name="Pairwise GSTprime") + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, size = 12, hjust = 1)) + coord_fixed() +
+  labs(x = "Population", y = "Population") +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 12)) +
+  geom_text(aes(label = round(value, 2)))
+
+ggheatmap
+
+
+
+library(ape)
+myNj <- ape::nj(as.dist(pairwise_mat))
+myNj$edge.length[myNj$edge.length < 0] <- 0
+
+plot(myNj, edge.width = 2)
+add.scale.bar()
+
+plot(hclust(dist(pairwise_mat)))
+
+
+
+
+
+
+```
+
+
+## Number of heterozygous positions
+
+```{r Heterozygosity, echo=TRUE}
+
+gt <- extract.gt(vcf.gatk)
+hets <- is.het(gt, na_is_false = TRUE)
+
+sum_het <- colSums(hets)
+
+sum_het.pop <- as.data.frame(sum_het)
+sum_het.pop <- cbind(Isolate = rownames(sum_het.pop), Country = newpca_pop$Country, Heterozygosity = sum_het.pop)
+rownames(sum_het.pop) <- NULL
+
+ggplot(sum_het.pop, aes(x = Country, y = sum_het, fill = Country)) + geom_boxplot(outlier.shape = NA) + geom_jitter() +
+  ggtitle("Number of heterozygous sites") +
+  labs(x = "Country", y = "Number of heterozygous position") +
+  theme(axis.text.x = element_text(size =12, angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size =12)) + theme(legend.position = "none") +
+  theme(plot.title = element_text(size = 30)) +
+  theme(axis.title = element_text(size = 25))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
