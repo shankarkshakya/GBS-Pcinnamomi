@@ -42,9 +42,6 @@ dp[dp < 4] <- NA
 
 vcf.gatk@gt[,-1][ is.na(dp) == TRUE ] <- NA
 
-
-#write.vcf(vcf.gatk, file = "Pcinna144_Q0.1-0.8_min4X.vcf.gz")
-
 ```
 
 
@@ -53,7 +50,6 @@ vcf.gatk@gt[,-1][ is.na(dp) == TRUE ] <- NA
 
 ```{r, echo=TRUE}
 
-#vcf.gatk <- read.vcfR("Pcinna144_Q0.1-0.8_min4X.vcf.gz")
 dp <- extract.gt(vcf.gatk, element = "DP", as.numeric=TRUE)
 
 myMiss <- apply(dp, MARGIN = 1, function(x){ sum( is.na(x) ) } )
@@ -71,7 +67,6 @@ vcf.gatk <- vcf.gatk[myMiss < 0.1, ]
 myMiss <- apply(dp, MARGIN = 2, function(x){ sum( is.na(x))} )
 myMiss <- myMiss / nrow(dp)
 vcf.gatk@gt <- vcf.gatk@gt[, c(TRUE, myMiss < 0.7)]
-
 
 ```
 
@@ -120,103 +115,118 @@ title(ylab = "Depth (DP)")
 library(adegenet)
 
 vcf.gatk.gl <- vcfR2genlight(vcf.gatk)
-#pca1 <- glPca(vcf.gatk.gl, parallel = FALSE)
-#saveRDS(pca1, file = "vcf.gatk.nf20_pca.RData")
+mypca <- glPca(vcf.gatk.gl, parallel = FALSE, nf = 20)
+#saveRDS(mypca, file = "vcf.gatk.nf20_pca.RData")
 
-mypca <- readRDS("vcf.gatk.nf20_pca.RData")
-#mypca <- pca1
+#mypca <- readRDS("vcf.gatk.nf20_pca.RData")
 
-pcasores <- mypca$scores
-rownames(pcasores) <- unlist(strsplit(rownames(pcasores), split = ".fq"))
+pcascores <- mypca$scores
+rownames(pcascores) <- unlist(strsplit(rownames(pcascores), split = ".fq"))
 
-# rownames(pcasores)[grep("port", rownames(pcasores))] <- "Portugal"
-# rownames(pcasores)[grep("ntaiw", rownames(pcasores))] <- "N.Taiwan"
-# rownames(pcasores)[grep("staiw", rownames(pcasores))] <- "S.Taiwan"
-# rownames(pcasores)[grep("centtaiw", rownames(pcasores))] <- "Cent.Taiwan"
-# rownames(pcasores)[grep("nsw", rownames(pcasores))] <- "NSW"
-# rownames(pcasores)[grep("safrica", rownames(pcasores))] <- "SAfrica"
-# rownames(pcasores)[grep("nvietnam", rownames(pcasores))] <- "N.Vietnam"
-# rownames(pcasores)[grep("waus", rownames(pcasores))] <- "W.Aus"
-# rownames(pcasores)[grep("france", rownames(pcasores))] <- "France"
-# rownames(pcasores)[grep("italy", rownames(pcasores))] <- "Italy"
-# rownames(pcasores)[grep("domrep", rownames(pcasores))] <- "DomRep"
-# rownames(pcasores)[grep("chile", rownames(pcasores))] <- "Chile"
-# rownames(pcasores)[grep("newguin", rownames(pcasores))] <- "PNG"
-# rownames(pcasores)[grep("tasaus", rownames(pcasores))] <- "Tasmania"
-# rownames(pcasores)[grep("queensaus", rownames(pcasores))] <- "Queensland"
-# rownames(pcasores)[grep("netaiw", rownames(pcasores))] <- "NE.Taiwan"
+# rownames(pcascores)[grep("port", rownames(pcascores))] <- "Portugal"
+# rownames(pcascores)[grep("ntaiw", rownames(pcascores))] <- "N.Taiwan"
+# rownames(pcascores)[grep("staiw", rownames(pcascores))] <- "S.Taiwan"
+# rownames(pcascores)[grep("centtaiw", rownames(pcascores))] <- "Cent.Taiwan"
+# rownames(pcascores)[grep("nsw", rownames(pcascores))] <- "NSW"
+# rownames(pcascores)[grep("safrica", rownames(pcascores))] <- "SAfrica"
+# rownames(pcascores)[grep("nvietnam", rownames(pcascores))] <- "N.Vietnam"
+# rownames(pcascores)[grep("waus", rownames(pcascores))] <- "W.Aus"
+# rownames(pcascores)[grep("france", rownames(pcascores))] <- "France"
+# rownames(pcascores)[grep("italy", rownames(pcascores))] <- "Italy"
+# rownames(pcascores)[grep("domrep", rownames(pcascores))] <- "DomRep"
+# rownames(pcascores)[grep("chile", rownames(pcascores))] <- "Chile"
+# rownames(pcascores)[grep("newguin", rownames(pcascores))] <- "PNG"
+# rownames(pcascores)[grep("tasaus", rownames(pcascores))] <- "Tasmania"
+# rownames(pcascores)[grep("queensaus", rownames(pcascores))] <- "Queensland"
+# rownames(pcascores)[grep("netaiw", rownames(pcascores))] <- "NE.Taiwan"
 
-# rownames(pcasores)[grep("Port", rownames(pcasores))] <- "Portugal"
-# rownames(pcasores)[grep("Taiw", rownames(pcasores))] <- "Taiwan"
-# rownames(pcasores)[grep("SAfrica", rownames(pcasores))] <- "SAfrica"
-# rownames(pcasores)[grep("France", rownames(pcasores))] <- "France"
-# rownames(pcasores)[grep("Italy", rownames(pcasores))] <- "Italy"
-# rownames(pcasores)[grep("DomRep", rownames(pcasores))] <- "DomRep"
-# rownames(pcasores)[grep("Chile", rownames(pcasores))] <- "Chile"
-# rownames(pcasores)[grep("NewGuin", rownames(pcasores))] <- "PNG"
-# rownames(pcasores)[grep(c("QueensAus|TasAus|WAus|NSWalesAus"), rownames(pcasores))] <- "Australia"
-# rownames(pcasores)[grep("NVietnam", rownames(pcasores))] <- "Vietnam"
+# rownames(pcascores)[grep("Port", rownames(pcascores))] <- "Portugal"
+# rownames(pcascores)[grep("Taiw", rownames(pcascores))] <- "Taiwan"
+# rownames(pcascores)[grep("SAfrica", rownames(pcascores))] <- "SAfrica"
+# rownames(pcascores)[grep("France", rownames(pcascores))] <- "France"
+# rownames(pcascores)[grep("Italy", rownames(pcascores))] <- "Italy"
+# rownames(pcascores)[grep("DomRep", rownames(pcascores))] <- "DomRep"
+# rownames(pcascores)[grep("Chile", rownames(pcascores))] <- "Chile"
+# rownames(pcascores)[grep("NewGuin", rownames(pcascores))] <- "PNG"
+# rownames(pcascores)[grep(c("QueensAus|TasAus|WAus|NSWalesAus"), rownames(pcascores))] <- "Australia"
+# rownames(pcascores)[grep("NVietnam", rownames(pcascores))] <- "Vietnam"
 # 
 # 
 # df <- mypca$scores
-# df <- data.frame(Country = c(rownames(pcasores)), df)
+# df <- data.frame(Country = c(rownames(pcascores)), df)
 # 
 # library(ggfortify)
 # 
-# rownames(pcasores)[grep("Portugal|France|Italy", rownames(pcasores))] <- "Europe"
-# rownames(pcasores)[grep("Taiwan|Vietnam", rownames(pcasores))] <- "Asia"
-# rownames(pcasores)[grep("SAfrica", rownames(pcasores))] <- "Africa"
-# rownames(pcasores)[grep("Chile" , rownames(pcasores))] <- "South America"
-# rownames(pcasores)[grep("Australia" , rownames(pcasores))] <- "Australia"
-# rownames(pcasores)[grep("PNG" , rownames(pcasores))] <- "PNG"
-# rownames(pcasores)[grep("DomRep" , rownames(pcasores))] <- "DomRep"
+# rownames(pcascores)[grep("Portugal|France|Italy", rownames(pcascores))] <- "Europe"
+# rownames(pcascores)[grep("Taiwan|Vietnam", rownames(pcascores))] <- "Asia"
+# rownames(pcascores)[grep("SAfrica", rownames(pcascores))] <- "Africa"
+# rownames(pcascores)[grep("Chile" , rownames(pcascores))] <- "South America"
+# rownames(pcascores)[grep("Australia" , rownames(pcascores))] <- "Australia"
+# rownames(pcascores)[grep("PNG" , rownames(pcascores))] <- "PNG"
+# rownames(pcascores)[grep("DomRep" , rownames(pcascores))] <- "DomRep"
 # 
-# df <- data.frame(Continent = c(rownames(pcasores)), df)
+# df <- data.frame(Continent = c(rownames(pcascores)), df)
 # 
 # newdf <- df[,c(3,4)]
 # 
 # 
-# head(pcasores)
-# rownames(pcasores)
+# head(pcascores)
+# rownames(pcascores)
 
 pop <- read.csv("Pcinna_pop.csv", header = TRUE)
-pop <- pop[pop$Isolate %in% rownames(pcasores), ]
-pop <- pop[match(rownames(pcasores), pop$Isolate), ]
-newpca_pop <- cbind(pop, pcasores)
+pop <- pop[pop$Isolate %in% rownames(pcascores), ]
+pop <- pop[match(rownames(pcascores), pop$Isolate), ]
+#newpca_pop <- cbind(pop, pcascores)
 
 
 ```
 
 
-## DAPC
+## Discriminant analysis of principal components
+
 
 ```{r, echo=TRUE}
 
 library(poppr)
-#pop(vcf.gatk.gl) <- pop$Area
+
 pop(vcf.gatk.gl) <- pop$Country
-#pop(vcf.gatk.gl) <- pop$MT
-
-
 mydapc <- dapc(vcf.gatk.gl, pop = pop(vcf.gatk.gl), parallel = F,  n.pca = 50, n.da = 5, glPca = mypca )
-
-# library(pals)
-# myCol <- glasbey(n = 10) %>% setNames(popNames(vcf.gatk.gl))
 
 scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
         posi.pca = "topright", posi.leg = "topleft", legend = F, 
         cleg = 0.9, inset.solid = 1, xax = 1, yax = 2, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
 
 
-newpop <- popsub(vcf.gatk.gl , blacklist = c("Chile", "Vietnam", "Taiwan"))
-#newpop <- popsub(vcf.gatk.gl , blacklist = c("Chile", "Vietnam"))
+
+newpop <- popsub(vcf.gatk.gl , blacklist = c("Taiwan", "Vietnam"))
 
 newdapc <- dapc(newpop, pop = pop(newpop), n.pca = 50, n.da = 5, parallel = FALSE)
-
 
 scatter.dapc(newdapc, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
         posi.pca = "topright", posi.leg = "topleft", legend = F, 
         cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+
+
+newpop2 <- popsub(vcf.gatk.gl , blacklist = c("Chile", "Taiwan", "Vietnam"))
+
+newdapc2 <- dapc(newpop2, pop = pop(newpop2), n.pca = 25, n.da = 5, parallel = FALSE)
+
+scatter.dapc(newdapc2, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+
+
+
+newpop3 <- popsub(vcf.gatk.gl , blacklist = c("PNG", "Chile", "Taiwan", "Vietnam"))
+
+newdapc3 <- dapc(newpop3, pop = pop(newpop3), n.pca = 20, n.da = 4, parallel = FALSE)
+
+scatter.dapc(newdapc3, clabel = 0.75, pch=15:19, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
 
 
 ```
@@ -235,15 +245,60 @@ ia_pop <- seppop(vcf.gatk.gl ) %>% lapply(samp.ia)
 par(mfrow = c(2,5))
 lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
 
-
-
-
 mean <- lapply(ia_pop, function(x) mean(na.omit(x)))
+
+```
+
+## Index of association boxplot and barplot using variants with no missing data
+
+```{r}
+
+vcf_ia <- vcf.gatk
+fix <- vcf_ia@fix
+gt <- vcf_ia@gt
+gt_vcf.ia <- extract.gt(vcf_ia)
+
+vcf_ia@fix <- fix[rowSums(!is.na(gt_vcf.ia)) == 127, ]
+vcf_ia@gt <- gt[fix[,3] %in% vcf_ia@fix[,3], ]
+
+vcf_ia_gl <- vcfR2genlight(vcf_ia)
+pop(vcf_ia_gl) <- pop$Country
+
+
+rf.ia <- seppop(vcf_ia_gl) %>% # separate each population
+  c(Total = vcf_ia_gl) %>%     # add the total population
+  lapply(samp.ia, threads = 0, n.snp = 100L, reps = 100L) %>%
+  data.frame %>%    # convert list to data frame w/ 1000 rows
+  tidyr::gather(POP, value)
+
+rf.ia$POP <- factor(rf.ia$POP)
+
+ggia <- ggplot(rf.ia, aes(x = POP, y = value)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank()) +
+  theme(text = element_text(size = 18)) +
+  ggtitle(expression(paste(bar(r)[d], " per population sampled over xxx SNPs")))
+ggia
+
+
+ia_pop <- seppop(vcf_ia_gl ) %>% lapply(samp.ia) 
+
+par(mfrow = c(2,5))
+lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
+
+
+# for (i in 1:length(vcf_list)){
+# 
+#   write.vcf(vcf_list[[i]], file = paste(names(vcf_list)[[i]], "6262.vcf.gz", sep = "." ))
+# 
+# }
+
+#vcf_list
 
 
 
 ```
-
 
 ## Minimum spanning network
 
@@ -257,8 +312,6 @@ msn <- poppr.msn(vcf.gatk.gl , distmat = bitwise.dist(vcf.gatk.gl ), palette = r
 set.seed(99)
 plot_poppr_msn(vcf.gatk.gl , msn, inds = "nepal")
 
-
-# 
 # library(pals)
 # pop(vcf.gatk.gl ) <- pop$Area
 # myCol <- alphabet(n = 25) %>% setNames(popNames(vcf.gatk.gl ))
@@ -269,9 +322,6 @@ plot_poppr_msn(vcf.gatk.gl , msn, inds = "nepal")
 # msn <- poppr.msn(vcf.gatk.gl , distmat = bitwise.dist(vcf.gatk.gl ), palette = myCol)
 # set.seed(99)
 # plot_poppr_msn(vcf.gatk.gl , msn, inds = "nepal")
-
-
-
 
 
 
@@ -289,11 +339,8 @@ myFreq <- glMean(vcf.gatk.gl )
 myFreq <- c(myFreq, 1-myFreq)
 hist(myFreq, proba=TRUE, col="darkseagreen3", xlab="Allele frequencies",
 main="Distribution of allele frequencies", nclass=20)
-temp <- density(myFreq, bw=.05)
-lines(temp$x, temp$y*2,lwd=3)
-
-
-
+# temp <- density(myFreq, bw=.05)
+# lines(temp$x, temp$y*2,lwd=3)
 
 
 
@@ -308,11 +355,8 @@ lines(temp$x, temp$y*2,lwd=3)
 source("genetic_diff.R")
 
 myDiff <- genetic_diff(vcf.gatk, pop$Country)
-#head(myDiff)
 
-dpf <- melt(myDiff[ , c(1, 24)] , na.rm=TRUE)
-#head(dpf)
-
+#dpf <- melt(myDiff[ , c(1, 24)] , na.rm=TRUE)
 dpf <- melt(myDiff[ , c("CHROM", "Gst", "Gprimest")] , na.rm=TRUE)
 p <- ggplot(dpf, aes(x=variable, y=value)) + geom_violin(fill="#8dd3c7")
 p <- p + xlab("Population differentiation statistics")
@@ -436,15 +480,10 @@ library(ape)
 myNj <- ape::nj(as.dist(pairwise_mat))
 myNj$edge.length[myNj$edge.length < 0] <- 0
 
-plot(myNj, edge.width = 2)
+plot(myNj, edge.width = 2, main = "NJ tree based on pairwise Gst")
 #add.scale.bar()
 
 plot(hclust(dist(pairwise_mat)))
-
-
-
-
-
 
 
 
@@ -475,6 +514,8 @@ ggplot(sum_het.pop, aes(x = Country, y = sum_het, fill = Country)) + geom_boxplo
 
 ```
 
+
+## Neighbor joining tree
 
 ```{r, eval=FALSE, include=FALSE}
 
@@ -507,130 +548,21 @@ tree_nj <- aboot(vcf.gatk.gl, tree = "nj", distance = bitwise.dist, sample = 100
 #           
 # final_tree
 
-
-
+library(phangorn)
 tree_nj <- midpoint(tree_nj)
 
 countryInfo <- split(tree_nj$tip.label, pop$Country)
 tree2 <- groupOTU(tree_nj, countryInfo)
 tree2$tip.label <- as.character(pop$Area)
+tree2$tip.label <- paste(pop$Area, pop$MT, sep = "_")
 
 ggtree(tree2, aes(color=group), layout='circular') + geom_tiplab(size=4, aes(angle=angle)) 
 
 
 
-ggtree(tree2, aes(color=group), layout='rectangular') + geom_tiplab(size=4)
-
-
-
-
-
-
-
-diversity_ci(vcf.gatk.sc)
-
-diversity_ci(vcf.gatk.sc, n = 1e4, rarefy = TRUE,
-                        parallel = "multicore", ncpus = 4L, raw = FALSE)
-
-
-
-
-
-
-
-
-
-
-
-
+#ggtree(tree2, aes(color=group), layout='rectangular') + geom_tiplab(size=4)
 
 ```
-
-
-
-## Index of association boxplot and barplot using variants with no missing data
-
-```{r}
-
-vcf_ia <- vcf.gatk
-fix <- vcf_ia@fix
-gt <- vcf_ia@gt
-
-vcf_ia@fix <- fix[rowSums(!is.na(gt_vcf.ia)) == 127, ]
-vcf_ia@gt <- gt[fix[,3] %in% vcf_ia@fix[,3], ]
-
-
-vcf_ia_gl <- vcfR2genlight(vcf_ia)
-pop(vcf_ia_gl) <- pop$Country
-
-
-rf.ia <- seppop(vcf_ia_gl) %>% # separate each population
-  c(Total = vcf_ia_gl) %>%     # add the total population
-  lapply(samp.ia, threads = 0, n.snp = 100L, reps = 100L) %>%
-  data.frame %>%    # convert list to data frame w/ 1000 rows
-  tidyr::gather(POP, value)
-
-head(rf.ia)
-
-rf.ia$POP <- factor(rf.ia$POP)
-
-ggia <- ggplot(rf.ia, aes(x = POP, y = value)) +
-  geom_boxplot() +
-  theme_bw() +
-  theme(panel.grid.major.x = element_blank()) +
-  theme(text = element_text(size = 18)) +
-  ggtitle(expression(paste(bar(r)[d], " per population sampled over xxx SNPs")))
-ggia
-
-
-
-ia_pop <- seppop(vcf_ia_gl ) %>% lapply(samp.ia) 
-
-par(mfrow = c(2,5))
-lapply(names(ia_pop), function(x) hist(ia_pop[[x]], main=x))
-
-
-
-
-
-
-
-```
-
-
-
-```{r}
-
-x <- glSim(2, 2, ploidy = 2)
-samp.ia(x)
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
