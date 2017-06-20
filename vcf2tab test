@@ -1,0 +1,20 @@
+first convert vcf data to tabular data using vcftools 
+
+cat MAF_Filtered.vcf.gatk6262 | vcf-to-tab > MAF_Filtered.vcf.gatk6262.tab
+
+output
+
+#CHROM  POS     REF     1-PA37-Port.fq  10-S7Castl-1-Port.fq   
+scaffold_1      13090   A       A/C     C/C     C/C     C/C     
+scaffold_1      14491   C       C/A     C/C     C/C     C/C     
+scaffold_1      14502   C       C/T     C/C     C/C     C/C     
+scaffold_1      14658   T       T/T     ./.     T/G     T/G  
+scaffold_6      363887  C       C/C     C/C     C/C     C/C   
+scaffold_6      363899  A       A/A     G/G     A/G     A/A          
+scaffold_6      386140  G       G/G     G/A     G/A     G/G    
+
+
+
+once a table is generated use  vcf_tab_to_fasta_alignment.pl script to convert to fasta alignment 
+{https://code.google.com/archive/p/vcf-tab-to-fasta/}
+
