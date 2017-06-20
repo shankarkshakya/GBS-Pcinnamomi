@@ -9,9 +9,9 @@ scaffold_1      13090   A       A/C     C/C     C/C     C/C
 scaffold_1      14491   C       C/A     C/C     C/C     C/C     
 scaffold_1      14502   C       C/T     C/C     C/C     C/C     
 scaffold_1      14658   T       T/T     ./.     T/G     T/G  
-scaffold_6      363887  C       C/C     C/C     C/C     C/C   
-scaffold_6      363899  A       A/A     G/G     A/G     A/A          
-scaffold_6      386140  G       G/G     G/A     G/A     G/G    
+.
+.
+.
 
 
 
@@ -36,6 +36,34 @@ MCYGGGYYCAYSYAGAYKWWGRAWYRCGRTMTTTSTCSRMKRCCYKAYYCTGCTGCATAYCYAYYATAKWYRRCYRGYRC
 YRYAAA
 
 3. Align fasta sequence using MUSCLE and convert to phylip format
+
+4. cat MAF_Filtered.vcf.gatk6262.fasta | grep "Tai" > Taiwan.txt # create list of samples per population
+
+Taiwan.txt
+>100-TW20-NTaiw.fq
+>101-TW21-NTaiw.fq
+>102-TW22-NTaiw.fq
+>103-TW27-NTaiw.fq
+>104-TW80-NETaiw.fq
+>106-TW82bis-NETaiw.fq
+>107-TW84-NETaiw.fq
+>138-TW203-STaiw.fq
+>139-TW206-STaiw.fq
+>140-TW207-STaiw.fq
+>141-TW210-STaiw.fq
+>142-TW212-STaiw.fq
+
+4. Extract fasta for these samples
+cut -c 2- Taiwan.txt | xargs -n 1 samtools faidx MAF_Filtered.vcf.gatk6262.fasta > Taiwan.fasta
+
+5. 
+
+
+
+
+
+
+
 
 
 
