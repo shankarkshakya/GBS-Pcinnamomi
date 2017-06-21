@@ -55,12 +55,27 @@ Taiwan.txt
 
 
 ## Try renaming samples name because later on MIGRATEN might throw an error if names are > 10 characaters
-4. Extract fasta for these samples
+
+4. Extract fasta for these samples / independent fasta file per population
 cut -c 2- Taiwan.txt | xargs -n 1 samtools faidx MAF_Filtered.vcf.gatk6262.fasta.aligned > Taiwan.fasta
+ awk -F"-" '{print $2}' Vietnam.txt # Editing file names
 
 5. fasta2tab <.fa>
+convert per population fasta to tab delimited txt file, where columns are id and sequence respectively.
 
- awk -F"-" '{print $2}' Vietnam.txt # Editing file names
+
+## MIGRATE 
+MIGRATE needs two files: 
+
+1. input file formatted as below.
+<n-POP> <NUMBER OF LOCI> <title for the output file>
+<length of sequence>
+<Numbe of samples for pop1> <Popname>
+id-1 seq1
+id-2 seq2
+
+2. File specifying parameters, which include typically input file, model either to estimate or not theta and M, MCMC run, burnin , type of data etc
+
  
 
 
