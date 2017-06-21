@@ -60,7 +60,8 @@ cut -c 2- Taiwan.txt | xargs -n 1 samtools faidx MAF_Filtered.vcf.gatk6262.fasta
 
 5. fasta2tab <.fa>
 
-
+ awk -F"-" '{print $2}' Vietnam.txt # Editing file names
+ 
 
 
 
