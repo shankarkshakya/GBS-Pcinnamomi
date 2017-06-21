@@ -53,10 +53,12 @@ Taiwan.txt
 >141-TW210-STaiw.fq
 >142-TW212-STaiw.fq
 
-4. Extract fasta for these samples
-cut -c 2- Taiwan.txt | xargs -n 1 samtools faidx MAF_Filtered.vcf.gatk6262.fasta > Taiwan.fasta
 
-5. 
+## Try renaming samples name because later on MIGRATEN might throw an error if names are > 10 characaters
+4. Extract fasta for these samples
+cut -c 2- Taiwan.txt | xargs -n 1 samtools faidx MAF_Filtered.vcf.gatk6262.fasta.aligned > Taiwan.fasta
+
+5. fasta2tab <.fa>
 
 
 
