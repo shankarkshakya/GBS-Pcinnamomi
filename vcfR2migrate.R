@@ -1,4 +1,29 @@
 
+#' @title Convert vcfR object to MigrateN format
+#' @description The function converts VcfR format data to text format that can be used as infile for MigrateN. 
+#'  
+#' @param vcf a vcfR object.
+#' @param pop factor of population.
+#' @in_pop population of interest.
+#' @param  name of output file.
+#' @return a text file that can be used as an input for MigrateN software
+#' 
+#' @details 
+#' This function converts the vcfR object to a text file which can be used downstream for MigrateN. 
+#' The function will remove loci with missing data, indels, and multiallelic loci. Thus, only SNPs data are analysed 
+#' where length of each locus is 1.  
+#' 
+#' 
+#' @example 
+#' library(vcfR)
+#' pkg <- "pinfsc50"
+#' my_vcf <- system.file("extdata", "pinf_sc50.vcf.gz", package = pkg)
+#' my_vcf <- read.vcfR( my_vcf, verbose = FALSE )
+#' my_pop <- as.factor(rep(c("A", "B", "C"), each = 6))
+#' vcfR2migrate(vcf = my_vcf , pop = my_pop , in_pop = c("A","C"), out_file = "my2pop.txt")
+#' 
+#' 
+#' @export
 vcfR2migrate <- function(vcf, pop, in_pop, out_file) {
   
   #Removing indels and multiallelic loci
@@ -83,40 +108,7 @@ for (frame in data_to_write) {
   write.table(frame, file = output_path, append = TRUE, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 }
 
-  
 }
 
 
-
-
-
-pkg <- "pinfsc50"
-my_vcf <- system.file("extdata", "pinf_sc50.vcf.gz", package = pkg)
-my_vcf <- read.vcfR( vcf_file, verbose = FALSE )
-
-my_pop <- as.factor(rep(c("A", "B", "C"), each = 6))
-
-
-
-vcfR2migrate(vcf = my_vcf, pop = my_pop, in_pop = c("A", "C"))
-
-
-
-vcf <- read.vcfR("MAF_Filtered.vcf.gatk6262.gz", verbose = FALSE)
-pop_vec <- structure(c(7L, 7L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 7L, 7L, 9L, 9L, 
-                       7L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 9L, 
-                       9L, 9L, 9L, 9L, 9L, 7L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
-                       1L, 7L, 1L, 1L, 8L, 8L, 8L, 8L, 8L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
-                       1L, 1L, 1L, 1L, 10L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 6L, 6L, 1L, 
-                       10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 2L, 
-                       2L, 2L, 2L, 2L, 7L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 5L, 5L, 
-                       5L, 5L, 5L, 4L, 4L, 4L, 4L, 3L, 3L, 3L, 3L, 3L, 3L, 6L, 6L, 9L, 
-                       9L, 9L, 9L, 9L, 9L, 9L), .Label = c("Australia", "Chile", "Dominican Republic", 
-                                                           "France", "Italy", "PNG", "Portugal", "South Africa", "Taiwan", 
-                                                           "Vietnam"), class = "factor")
-
-
-
-
-vcfR2migrate(vcf = vcf , pop = pop_vec , in_pop = c("Australia", "Taiwan", "Vietnam"), out_file = "my3pop.txt")
 
