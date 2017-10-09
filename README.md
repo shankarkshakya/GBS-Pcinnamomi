@@ -26,3 +26,5 @@ CCGAACA 33-S244S1B-Portugal
 sabre se -f ../lane6-s005-index----GBS0162_S5_L006_R1_001.fastq.gz -b GBS0162_sabre_barcode.txt -u unknown_barcode.fq
 
 
+# Mapping reads
+
