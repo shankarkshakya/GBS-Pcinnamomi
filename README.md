@@ -26,5 +26,25 @@ CCGAACA 33-S244S1B-Portugal
 sabre se -f ../lane6-s005-index----GBS0162_S5_L006_R1_001.fastq.gz -b GBS0162_sabre_barcode.txt -u unknown_barcode.fq
 
 
-# Mapping reads
+# Mapping reads using bowtie2 and processing
+
+bowtie2 -x $REF -U ${fq[$i]} --rg-id ${fq[$i]} --rg PU:ill --rg SM:${fq[$i]} --rg PL:Illumina -S ${fq[$i]}.sam
+
+convert sam to bam: samtools view -bS ${sam[$i]} > ${sam[$i]}.bam
+
+sort bam:samtools sort ${bam[$i]} -o ${bam[$i]}.sorted
+
+index bam:samtools index ${bam[$i]}
+
+remove duplicates: samtools rmdup ${sam[$i]} ${sam[$i]}.rmdup.bam
+
+
+# Variant Calling using GATK Haplotype caller
+
+
+
+
+
+
+
 
