@@ -48,6 +48,9 @@ remove duplicates: samtools rmdup ${sam[$i]} ${sam[$i]}.rmdup.bam
 # Create a txt file with path to list of bam files to be used by GATK
 
 bash
- for i in `ls *.bam`; do echo "`pwd`/$i"; done > bam.list
+ 
+for i in `ls *.bam`; do echo "`pwd`/$i"; done > bam.list
+
+ls | awk '{system("readlink -f " $1)}' > bam.list
 
 
