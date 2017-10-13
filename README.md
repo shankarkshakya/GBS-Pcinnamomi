@@ -53,4 +53,5 @@ for i in `ls *.bam`; do echo "`pwd`/$i"; done > bam.list
 
 ls | awk '{system("readlink -f " $1)}' > bam.list
 
+readlink -f *.bam > bam.list
 
