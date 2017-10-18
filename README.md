@@ -55,3 +55,26 @@ ls | awk '{system("readlink -f " $1)}' > bam.list
 
 readlink -f *.bam > bam.list
 
+
+
+
+
+
+
+# Population structure analysis using ADMIXTURE
+
+First the vcf file need to be converted into plink format which can be used further by ADMIXTURE.
+
+plink 
+--vcf ../rawGBS/FASTQ/RMDUP_BAMS/Pcinna242.rmdup.gvcf2vcf.vcf.gz 
+--allow-extra-chr 
+--recode12 
+--out Pcinna242.rmdup.gvcf2vcf.vcf
+
+This will result into .log, .map, .nosex and .ped file.
+
+https://www.genetics.ucla.edu/software/admixture/admixture-manual.pdf
+
+
+
+
