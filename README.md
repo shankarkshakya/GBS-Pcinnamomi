@@ -75,6 +75,12 @@ This will result into .log, .map, .nosex and .ped file.
 
 https://www.genetics.ucla.edu/software/admixture/admixture-manual.pdf
 
+ admixture <inputfile> <K>
+ admixture Pcinna242.rmdup.gvcf2vcf.181ind.220Var.vcf.ped 11
 
+
+for K in 12 13; 
+do admixture --cv Pcinna242.rmdup.gvcf2vcf.181ind.220Var.vcf.ped $K | tee log${K}.out; 
+done
 
 
