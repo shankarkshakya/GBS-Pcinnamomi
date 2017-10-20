@@ -1,0 +1,243 @@
+Isolate,Location,Area,Country,Country_code,Type of site,Source,Host,MT
+1-PA37-Port,,Portugal,Portugal,PORT,,soil,Quercus suber,A2
+2-PA45-Port,,Portugal,Portugal,PORT,,soil,Quercus suber,A2
+5-TavQsub1-Port,"Tavira, Faro",Faro_Portugal,Portugal,PORT,Nursery,Soil,Quercus suber,A2
+6-Arb2-TSrnd-Port,"Tavira, Faro",Faro_Portugal,Portugal,PORT,Forest,Soil,Arbutus unedo,A2
+7-BarXV-1b-8-Port,"Loulé, Faro",Faro_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+8-Foz-Port,"Silves, Faro",Faro_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+9-S-MarcSALG401-Port,"Silves, Faro",Faro_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+10-S7Castl-1-Port,"Vinhais, Bragança",Bragança_Portugal,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+11-S10-S66-L3-Port,"Macedo de Cavaleiros, Bragança",Bragança_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+12-S13-S66-L3-Port,"Montemor-o-Novo, Évora",Evora_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+13-S14-S70-L6-Port,"Loulé, Faro",Faro_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+14-S102-S8-1-Port,"Terras de Bouro, Braga",Braga_Portugal,Portugal,PORT,Forest,Soil,Quercus robur + Quercus pyrenaica,A2
+16-S113-S1-Port,"Terras de Bouro, Braga",Braga_Portugal,Portugal,PORT,Forest,Soil,Quercus suber,A2
+17-S126-S2-Port,"Amarante, Porto",Porto_Portugal,Portugal,PORT,Nursery,Soil,Abies alba,A2
+18-S127-S4-Port,"Amarante, Porto",Porto_Portugal,Portugal,PORT,Nursery,Soil,Arbutus unedo,A2
+44-CL9-Chile,"Parque Oncol, site 5",S_Chile,Chile,CHL,Forest,Soil,Drimys winteri,A2
+45-CL19-Chile,"Parque Oncol, site 6",S_Chile,Chile,CHL,Forest,Soil,Saxegothea conspicua,A2
+46-CL35-Chile,"Parque Oncol, site 6",S_Chile,Chile,CHL,Forest,Soil,Luma apiculata,A2
+47-CL44-Chile,"Parque Oncol, site 5",S_Chile,Chile,CHL,Forest,Soil,Drimys winteri,A2
+48-CL53-Chile,"Parque Oncol, site 7",S_Chile,Chile,CHL,Forest,Soil,Saxegothea conspicua,A2
+49-CL59-Chile," Las Minas, close to Rio Futa",Cent_Chile,Chile,CHL,Forest,Soil,Castanea sativa,A2
+50-CL69-Chile," Las Minas, close to Rio Futa",Cent_Chile,Chile,CHL,Forest,Soil,Castanea sativa,A2
+51-CL71-Chile,"Reserva Costera Valdiviana, site 20",S_Chile,Chile,CHL,Forest,Soil,Nothofagus dombeyi,A2
+52-CL80-Chile,"Reserva Costera Valdiviana, site 20",S_Chile,Chile,CHL,Forest,Soil,Saxegothea conspicua,A2
+53-CL88-Chile,"Reserva Costera Valdiviana, site 21",S_Chile,Chile,CHL,Forest,Soil,Luma apiculata,A2
+54-CL110-Chile,"Reserva Costera Valdiviana, site 22",S_Chile,Chile,CHL,Forest,Soil,Nothofagus dombeyi,A2
+55-CL113-Chile,"Reserva Costera Valdiviana, site 23",S_Chile,Chile,CHL,Forest,Soil,Nothofagus dombeyi,A2
+56-CL131-Chile,"Reserva Costera Valdiviana, site 24",S_Chile,Chile,CHL,Forest,Soil,Nothofagus dombeyi,A2
+57-CL141-Chile,"Reserva Costera Valdiviana, site 24",S_Chile,Chile,CHL,Forest,Soil,Nothofagus dombeyi,A2
+58-CL147-Chile,"Reserva Costera Valdiviana, site 24",S_Chile,Chile,CHL,Forest,Soil,Drimys+Luma+Nothofagus,A2
+92-TW2-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Diospyros morrisiana,A2
+93-TW3-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Diospyros morrisiana,A2
+94-TW6-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis carlesii,A2
+96-TW9-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Cinnamomum micranthum,A2
+97-TW12-NTaiw,"Fushan, site F01",N_Taiwan,Taiwan,TWN,Forest,Soil,Quercus glauca,A1
+98-TW17-NTaiw,"Fushan, site F01",N_Taiwan,Taiwan,TWN,Forest,Soil,Quercus stenophyloides,A2_Homothallic
+99-TW18-NTaiw,"Fushan, site F01",N_Taiwan,Taiwan,TWN,Forest,Soil,Quercus stenophyloides,A1
+100-TW20-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis carlesii,A1
+101-TW21-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Diospyros morrisiana,A2?
+102-TW22-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Swamp,A2?
+103-TW27-NTaiw,"Fushan, site F02",N_Taiwan,Taiwan,TWN,Forest,Soil,Machilus thunbergii,A1
+104-TW80-NETaiw,"Taipingshan, site F04",NE_Taiwan,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+105-TW81-NETaiw,"Taipingshan, site F04",NE_Taiwan,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+106-TW82bis-NETaiw,"Taipingshan, site F04",NE_Taiwan,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+107-TW84-NETaiw,"Taipingshan, site F04",NE_Taiwan,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+178-W1360-NSWalesAus,"Heathcote NP, Sarah' s knots",NSW_Aus,Australia,AUS,,,Acacia hispida,0
+179-W1366-NSWalesAus,"Blue Mountains NP, Mount Victoria",NSW_Aus,Australia,AUS,,,"Grevillea sp., Eucalyptus sp.",A2
+180-W1368-NSWalesAus,"Blue Mountains NP, Mount Victoria",NSW_Aus,Australia,AUS,,,"Grevillea sp., Acacia sp.",A2
+181-W1371-NSWalesAus,"Blue Mountains NP, Katoomba",NSW_Aus,Australia,AUS,,,Leptospermum sp.,0
+182-W1398-NSWalesAus,"Dharawal SCA, Madden Falls",NSW_Aus,Australia,AUS,,,"Eucalyptus sp., Petrophile sp.",A2
+185-W1461-NSWalesAus,Garrawarra State Conservation,NSW_Aus,Australia,AUS,,,,A2
+186-W1626-NSWalesAus,Georges River NP,NSW_Aus,Australia,AUS,,,Banksia sp.,A2
+187-W1636-NSWalesAus,Parr Conservation Park,NSW_Aus,Australia,AUS,,,"Banksia sp., Eucalyptus sp.",A2
+188-W1639-NSWalesAus,"Wollemi NP, Mount Lagoon",NSW_Aus,Australia,AUS,,,"Eucalyptus sp., Acacia costata",A2
+189-W1640-NSWalesAus,"Wollemi NP, Mount Lagoon",NSW_Aus,Australia,AUS,,,"Eucalyptus sp., Acacia costata",A2
+190-W1641-NSWalesAus,"Wollemi NP, Colo Heights",NSW_Aus,Australia,AUS,,,Macrozamia sp.,A2
+191-W1653-NSWalesAus,Dharawal SCA,NSW_Aus,Australia,AUS,,,"Eucalyptus sp., Angophora sp.",A2
+193-W1659-NSWalesAus,Garrawarra State Conservation,NSW_Aus,Australia,AUS,,,"Casuarina sp., Eucalyptus sp.",A2
+200-W1733-NSWalesAus_Rep1,Hawlesbury Nepean,NSW_Aus,Australia,AUS,,,,A2
+219-W1871-NSWalesAus,"New England NP, NSW",NSW_Aus,Australia,AUS,,,Gondwana rainforest,A2
+62-PH030-Italy,,Italy,Italy,ITL,Nursery,root,Quercus ilex,A2
+63-PH031-Italy,,Italy,Italy,ITL,Nursery,collar,Castanea sativa,A2
+64-PH032-Italy,,Italy,Italy,ITL,Nursery,root,Taxus baccata,A2
+65-PH067-Italy,,Italy,Italy,ITL,Garden,bark,Quercus suber,A2
+66-PH092-Italy,,Italy,Italy,ITL,woodland,soil,Quercus suber,A2
+81-CIN6-DomRep,Celestina,Celestina_DomRep,Dominican Republic,DOMREP,Forest,Soil,Pinus occidentalis,A2
+82-CIN9-DomRep,Los Montones,Los Montones_DomRep,Dominican Republic,DOMREP,Forest,Soil,Pinus occidentalis,A2
+83-CIN10-DomRep,Los Montones,Los Montones_DomRep,Dominican Republic,DOMREP,Forest,Soil,Pinus occidentalis,A2
+84-CIN11-DomRep,Los Gurabitos,Los Gurabitos_DomRep,Dominican Republic,DOMREP,Plantation,Soil,Pinus caribaea,A2
+85-CIN14-DomRep,Crossing of roads to Carrizal and Rincón de Piedras,DomRep,Dominican Republic,DOMREP,Forest,Soil,Pinus occidentalis,A2
+69-PH186-France,,France,France,FRA,Forest,soil,Quercus ilex,A2
+76-P53-04-France,,France,France,FRA,,,Castanea sp. ,A2
+77-P54-04-France,,France,France,FRA,,,Quercus sp. ,A2
+228-CP517-SAfrica,S&SW Cape,S&SW Cape_SAfrica,South Africa,RSA,,,Ocotea bullata,A2
+229-CP518-SAfrica,S&SW Cape,S&SW Cape_SAfrica,South Africa,RSA,,,Ocotea bullata,A1
+230-T21-SAfrica,"S&SW Cape (Bergriver, SA)",S&SW Cape_SAfrica,South Africa,RSA,,,,A1
+226-C215-SAfrica,S&SW Cape,S&SW Cape_SAfrica,South Africa,RSA,,,Leucospermum cordifolium,A1
+87-P3657-NewGuin,"Mankai, Bulolo","Mankai, Bulolo_PNG",PNG,PNG,Forest,Soil,Castanopsis,A1
+227-C411-SAfrica,S&SW Cape,S&SW Cape_SAfrica,South Africa,RSA,,,Pinus radiata,A2
+90-P15821-NewGuin,Mount Kaidu,Mount Kaidu_PNG,PNG,PNG,Forest,Soil,?,A1
+153-TW237-STaiw,"Hengchun peninsula, site F25",S_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis faberi,A1
+138-TW203-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus championii,A1
+139-TW206-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus championii,A1
+140-TW207-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus championii,A1
+141-TW210-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus championii,A2_Homothallic
+142-TW212-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus championii,A2_Homothallic
+143-TW213-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus championii,A2_Homothallic
+144-TW215-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus longinux,A1
+145-TW217-STaiw,"Hengchun peninsula, site F24",S_Taiwan,Taiwan,TWN,Forest,Soil,Quercus longinux,A1
+146-TW221-STaiw,"Hengchun peninsula, site F25",S_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis faberi,A1
+147-TW224-STaiw,"Hengchun peninsula, site F25",S_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis faberi,A2_Homothallic
+149-TW226-STaiw,"Hengchun peninsula, site F25",S_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis faberi,A1
+150-TW227-STaiw,"Hengchun peninsula, site F25",S_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis faberi,A2_Homothallic
+151-TW231-STaiw,"Hengchun peninsula, site F25",S_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis faberi,A1
+82-CIN-9-DomRep_Rep2,Los Montones,Los Montones_DomRep,Dominican Republic,DOMREP,Forest,Soil,Pinus occidentalis,A2
+154-TW253-centTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis uraiana,A2
+155-TW261-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Machilus kusanoi,A1
+156-TW262-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Machilus kusanoi,A1
+157-TW265-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Machilus kusanoi,A2
+158-TW275-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis kawakami,A1
+159-TW276-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis kawakami,A2
+160-TW279-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis kawakami,A1
+161-TW282-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis kawakami,A1
+162-TW284-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Machilus thunbergii,A2
+163-TW287-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Machilus thunbergii,A2
+164-TW289-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis uraiana,A1
+166-TW292-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis uraiana,A2
+167-TW302-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Machilus thunbergii,A2
+168-TW305-CentTaiw,"Lenhuachih, site F15",Cent_Taiwan,Taiwan,TWN,Forest,Soil,Castanopsis kawakami,A2
+266-A2-349-TasAus,Browns Plains,Tas_Aus,Australia,AUS,,,Monotoca glauca,A2
+235-UQ4763-QueensAus,Priest Gully,Q_Aus,Australia,AUS,,,soil sample,0
+236-UQ4766-QueensAus,Priest Gully,Q_Aus,Australia,AUS,,,soil sample,0
+238-UQ4774-QueensAus,Tingalpa Creek,Q_Aus,Australia,AUS,,,soil sample,0
+239-UQ4775-QueensAus,Tingalpa Creek,Q_Aus,Australia,AUS,,,soil sample,0
+240-UQ4827-QueensAus,Mt Petrie,Q_Aus,Australia,AUS,,,lupin bait,0
+241-UQ4828-QueensAus,Mt Petrie,Q_Aus,Australia,AUS,,,lupin bait,0
+242-UQ4839-QueensAus,Mt Petrie,Q_Aus,Australia,AUS,,,lupin bait,0
+243-UQ4840-QueensAus,Mt Petrie,Q_Aus,Australia,AUS,,,lupin bait,0
+246-UQ4863-QueensAus,Tingalpa Creek,Q_Aus,Australia,AUS,,,lupin bait,0
+249-UQ4955-TasAus,Unknown,Tas_Aus,Australia,AUS,,,,0
+250-UQ5376-TasAus,Hurst site,Tas_Aus,Australia,AUS,,,Boronia pilosa,0
+252-UQ6043-NVietnam,,N_Vietnam,Vietnam,VNM,,,Pineapple,0
+68-PH185-France_Rep1,,France,France,FRA,Forest,soil,Quercus suber,A2
+254-3579-WAus,Stirling Range N.Park,W_Aus,Australia,AUS,,,Darwinia oxylepis,A2
+255-UQ736-WAus,Ravenswood,W_Aus,Australia,AUS,,,Adenanthos sp.,A2
+256-UQ738-WAus,Jarrahdale (minesite),W_Aus,Australia,AUS,,,Banksia grandis,A2
+257-UQ739-WAus,Walpole,W_Aus,Australia,AUS,,,Banksia sp.,A2
+260-UQ795-WAus,Cape Arid,W_Aus,Australia,AUS,,,soil,A1
+261-UQ817-TasAus,Coles Bay,Tas_Aus,Australia,AUS,,,Aotus ericoides,A2
+262-UQ818-QueensAus,Cooloola,Q_Aus,Australia,AUS,,,Dillwyna floribunda,A2
+263-UQ819-NewGuin,Mt. Kaidu,Mount Kaidu_PNG,PNG,PNG,,,soil,0
+268-VN070-NVietnam,"Hoang-Lien Mountains, site 3",N_Vietnam,Vietnam,VNM,Forest,,Quercus glauca,0
+270-VN058-NVietnam,"Hoang-Lien Mountains, site 2",N_Vietnam,Vietnam,VNM,Forest,,Rhododendron sp.,0
+273-VN108-NVietnam,"Hoang-Lien Mountains, site 4",N_Vietnam,Vietnam,VNM,Forest,,Castanopsis sp.,0
+276-VN210-NVietnam,"Hoang-Lien Mountains, site 5",N_Vietnam,Vietnam,VNM,Forest,,Neolitsea poilanei,0
+279-VN055-NVietnam,"Hoang-Lien Mountains, site 13",N_Vietnam,Vietnam,VNM,Forest,,Castanopsis acutiminissima,0
+281-VN231-NVietnam,"Hoang-Lien Mountains, site 13",N_Vietnam,Vietnam,VNM,Forest,,Casearia annamensis,0
+282-VN050-NVietnam,"Hoang-Lien Mountains, site 13",N_Vietnam,Vietnam,VNM,Forest,,Casearia annamensis,0
+284-VN043-NVietnam,"Hoang-Lien Mountains, site 15",N_Vietnam,Vietnam,VNM,Forest,,"Neolitsea polycarpa, Symplocos pseudobarberina, Beilschmiedea foveolata",0
+285-VN045-NVietnam,"Hoang-Lien Mountains, site 9",N_Vietnam,Vietnam,VNM,Forest,,Quercus glauca,0
+291-VN340-NVietnam,"Hoang-Lien Mountains, site 8",N_Vietnam,Vietnam,VNM,Forest,,"Acer oblongum, Symplocos dryophila",0
+292-VN457-NVietnam,"Ba-Vi National Park, site 17",N_Vietnam,Vietnam,VNM,Forest,,Machilus bonii,0
+293-VN501-NVietnam,"Ba-Vi National Park, site 17",N_Vietnam,Vietnam,VNM,Forest,,"Quercus glauca, Meliosma arnottiana",0
+264-A2-183-NewGuin,Bulolo,"Mankai, Bulolo_PNG",PNG,PNG,,,soil,0
+108-TW88-YilanCo-NE-Taiwan,"Taipingshan, site F04",Yilan county Northeast,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+109-TW90-YilanCo-NE-Taiwan,"Taipingshan, site F04",Yilan county Northeast,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+110-TW92-YilanCo-NE-Taiwan,"Taipingshan, site F04",Yilan county Northeast,Taiwan,TWN,Forest,Soil,Fagus hayatae,A1
+111-TW93-YilanCo-NE-Taiwan,"Taipingshan, site F05",Yilan county Northeast,Taiwan,TWN,Forest,Soil,Chamaecyparis obtusa,A1
+112-TW97-YilanCo-NE-Taiwan,"Taipingshan, site F05",Yilan county Northeast,Taiwan,TWN,Forest,Soil,Chamaecyparis obtusa,A1
+123-TW174-SPen-Taiwan,"Hengchun peninsula, site F20",southern peninsula,Taiwan,TWN,Forest,Soil,Lithocarpus sinshuiensis,A2_Homothallic
+124-TW176-SPen-Taiwan,"Hengchun peninsula, site F20",southern peninsula,Taiwan,TWN,Forest,Soil,Lithocarpus sinshuiensis,A2_Homothallic
+125-TW178-SPen-Taiwan,"Hengchun peninsula, site F20",southern peninsula,Taiwan,TWN,Forest,Soil,Lithocarpus sinshuiensis,A2_Homothallic
+126-TW181-SPen-Taiwan,"Hengchun peninsula, site F20",southern peninsula,Taiwan,TWN,Forest,Soil,Engelhardia roxburghiana,A2_Homothallic
+127-TW184-SPen-Taiwan,"Hengchun peninsula, site F23",southern peninsula,Taiwan,TWN,Forest,Soil,Castanopsis indica,A1
+128-TW185-SPen-Taiwan,"Hengchun peninsula, site F23",southern peninsula,Taiwan,TWN,Forest,Soil,Castanopsis indica,A2_Homothallic
+15-S108-S4A1-Portugal,"Terras de Bouro, Braga",,Portugal,PORT,Forest,Soil,Fagus sylvatica,A2
+19-S142S7C-Portugal,"Monchique, Faro",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+200-W1733-NSWalesAus_Rep2,Hawlesbury Nepean,New South Wales,Australia,AUS,,,,A2
+20-S144S4-Portugal,"Grandola, Setúbal",,Portugal,PORT,Forest,Soil,Quercus suber,A2
+21-S152-S2-1-Portugal,"Estremoz, Évora",,Portugal,PORT,Forest,Soil,Quercus ilex,A2
+225-WalnussLinz-Austria,,,Austria,AUST,,,Juglans nigra,
+22-S162-S4-1-Portugal,"Anadia, Aveiro",,Portugal,PORT,Nursery,Soil,Castanea sativa,A2
+231-UQ2966-SouthAfrica,"S&SW Cape (Doringrivier, SA)",,South Africa,RSA,,,,A1
+232-UQ2968-SouthAfrica,"S&SW Cape (Groot Doringrivier, SA)",,South Africa,RSA,,,,A1
+233-UQ3025-Georgia-USA,Unknown,Georgia,USA,USA,,,Pinus echinata,A2
+234-UQ3026-USA,Unknown,,USA,USA,,,Persea americana,A2
+23-S167-S5C-Portugal,"Anadia, Aveiro",,Portugal,PORT,Nursery,Soil,Castanea sativa,A2
+24-S175-S1-Portugal,"Anadia, Aveiro",,Portugal,PORT,Nursery,Soil,Castanea sativa,A2
+253-UQ6376-SE-Vietnam,Ha Trung,Southeastern,Vietnam,VNM,,,Pineapple,
+25-S181-S5-2-Portugal,"Anadia, Aveiro",,Portugal,PORT,Nursery,Soil,Quercus rubra,A2
+26-S186S1-2-Portugal,"Sintra, Lisboa",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+27-S193-S7A-Portugal,"Sintra, Lisboa",,Portugal,PORT,Forest,Soil,Castanea sativa + Abies alba,A2
+283-VN017-N-Vietnam,"Hoang-Lien Mountains, site 15",Northern ,Vietnam,VNM,Forest,,Neolitsea polycarpa,
+286-VN355-N-Vietnam,"Hoang-Lien Mountains, site 9",Northern ,Vietnam,VNM,Forest,,"Acer oliverianum, Symplocos quillaminii, Eryobotrya cavaleriei",
+287-VN373-N-Vietnam,"Hoang-Lien Mountains, site 8",Northern ,Vietnam,VNM,Forest,,"Ilex leeseneri, Castanopsis acutiminissima, Eurya annamensis",
+289-VN319-N-Vietnam,"Hoang-Lien Mountains, site 8",Northern ,Vietnam,VNM,Forest,,Acer oblongum,
+28-S208-S1D-Portugal,"Grandola, Setúbal",,Portugal,PORT,Forest,Soil,Quercus suber,A2
+290-VN339-N-Vietnam,"Hoang-Lien Mountains, site 8",Northern ,Vietnam,VNM,Forest,,"Acer oblongum, Symplocos dryophila",
+294-VN555-N-Vietnam,"Ba-Vi National Park, site 17",Northern ,Vietnam,VNM,Forest,,Magnolia annamensis,
+295-VN512-N-Vietnam,"Ba-Vi National Park, site 17",Northern ,Vietnam,VNM,Forest,,"Vernicia montana (Euphorbiaceae), Antidesma sp.",
+296-VN510-N-Vietnam,"Ba-Vi National Park, site 17",Northern ,Vietnam,VNM,Forest,,Castanopsis chinensis,
+297-VN582-N-Vietnam,"Ba-Vi National Park, site 18",Northern ,Vietnam,VNM,Forest,,"Phoebe petelotii (Lauraceae), Machilus thunbergii, Claoxylon indicum (Euphorbiaceae)",
+298-VN450-N-Vietnam,"Ba-Vi National Park, site 19",Northern ,Vietnam,VNM,Forest,,Castanopsis chinensis,
+299-DCE25-W-Australia,,Western,Australia,AUS,,,,
+29-S214R2-Portugal,"Mealhada, Aveiro",,Portugal,PORT,Forest,Soil,Phillyrea latifolia,A2
+300-DDS3477-W-Australia,,Western,Australia,AUS,,,,
+301-DDS3646-W-Australia,,Western,Australia,AUS,,,,
+302-VHSC29279-W-Australia,,Western,Australia,AUS,,,,
+303-VHSC5439-W-Australia,,Western,Australia,AUS,,,,
+304-VHSC7819-W-Australia,,Western,Australia,AUS,,,,
+305-PH234-Tunisia,,,Tunisia,TUN,,,,
+30-S221-S10-Portugal,"Seia, Guarda",,Portugal,PORT,Forest,Soil,Quercus rubra,A2
+31-S233-S3M-Portugal,"Mealhada, Aveiro",,Portugal,PORT,Forest,Soil,Quercus robur,A2
+32-S238-S1A-Portugal,"Seia, Guarda",,Portugal,PORT,Forest,Soil,Quercus robur,A2
+33-S244S1B-Portugal,"Seia, Guarda",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+34-S260-S11A-Portugal,"Celorico da Beira, Guarda",,Portugal,PORT,Forest,Soil,Quercus pyrenaica,A2
+35-S272S3B-Portugal,"Manteigas, Guarda",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+36-S280S1A-Portugal,"Manteigas, Guarda",,Portugal,PORT,Forest,Soil,Fagus sylvatica,A2
+37-S284-S2C-Portugal,"Guarda, Guarda",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+38-S289-R5C-Portugal,"Guarda, Guarda",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+39-S89-S1-Portugal,"Terras de Bouro, Braga",,Portugal,PORT,Forest,Soil,Quercus rubra,A2
+3-Caetano-37-Spain,Cádiz,,Spain,SPN,,,Quercus suber,A2
+40-S91S4H-Portugal,"Terras de Bouro, Braga",,Portugal,PORT,Forest,Soil,Quercus suber,A2
+41-S92S12B-Portugal,"Terras de Bouro, Braga",,Portugal,PORT,Forest,Soil,Castanea sativa,A2
+43-CIF-1-Spain,Cádiz,,Spain,SPN,,,Quercus suber,A2
+4-Caetano-32-Spain,Cádiz,,Spain,SPN,,,Quercus suber,A2
+60-PH002-UK,,,UK,UK,woodland,soil,Quercus robur,A2
+61-PH003-UK,,,UK,UK,woodland,bark,Quercus robur,A2
+67-PH093-Italy,,,Italy,ITL,nursery,soil,Picea abies,A2
+68-PH185-France_Rep2,,,France,FRA,Forest,soil,Quercus suber,A2
+70-PH188-Italy,,,Italy,ITL,Park,soil,Quercus ilex,A2
+71-PH190-Italy,,,Italy,ITL,Forest,soil,Pistacia lentiscus,A2
+72-PH227-Tunisia,,,Tunisia,TUN,Forest,Soil,Quercus suber,A2
+73-PH228-Tunisia,,,Tunisia,TUN,Forest,Soil,Quercus suber,A2
+74-PH229-Algeria,,,Algeria,ALG,Forest,Soil,Quercus suber,A2
+75-PH230-Algeria,,,Algeria,ALG,Forest,Soil,Quercus suber,A2
+78-P183-Hungary,"Székesfehérvár (Bricostore), Hungary, 06.09.2007. (plant imported from the Netherlands)",,Hungary,HUN,,necrotic bark from stem base,Rhododendron,A2
+79-P301-Mallorca,,,Mallorca,MAL,,,unknown,A2
+80-JA132-Hungary,"Gencsapáti, Hungary",,Hungary,HUN,,,Chamaecyparis lawsoniana 'Columnaris',A2
+82-CIN-9-DomRep_Rep3,Los Montones,,Dominican Republic,DOMREP,Forest,Soil,Pinus occidentalis,A2
+J001-Bent-OR-USA,Benton,"Bent, OR",USA,USA,,,,
+R001-Yamhill-OR-USA,,"Yamhill, OR",USA,USA,,,,
+R024-Bent-OR-USA,,"Bent, OR",USA,USA,,,,
+R042-Bent-OR-USA,,"Bent, OR",USA,USA,,,,
+R050-Bent-OR-USA,,"Bent, OR",USA,USA,,,,
+R052-Bent-OR-USA,,"Bent, OR",USA,USA,,,,
+R053-Bent-OR-USA,,"Bent, OR",USA,USA,,,,
+R056-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+R073-Mult-OR-USA,,"Multnomah, OR",USA,USA,,,,
+R075-Mult-OR-USA,,"Multnomah, OR",USA,USA,,,,
+R076-Mult-OR-USA,,"Multnomah, OR",USA,USA,,,,
+R077-Mult-OR-USA,,"Multnomah, OR",USA,USA,,,,
+R142-Bent-OR-USA,,"Bent, OR",USA,USA,,,,
+S-69-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+S-71-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+S-84-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+S-93-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+S-94-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+S-95-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+S-96-Clack-OR-USA,,"Clackamas, OR",USA,USA,,,,
+200-W1733-NSWalesAus_Rep3,Hawlesbury Nepean,NSW_Aus,Australia,AUS,,,,A2
+68-PH185-France_Rep3,,,France,FRA,Forest,soil,Quercus suber,A2
