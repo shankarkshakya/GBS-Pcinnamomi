@@ -1,0 +1,394 @@
+---
+title: "Untitled"
+author: "Shankar K Shakya"
+date: "November 16, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+rm(list=ls())
+library(vcfR)
+
+group1_vcf <- read.vcfR("group1_vcf.gz")
+colnames(group1_vcf@gt)
+
+group2_vcf <- read.vcfR("group2_vcf.gz")
+group2_vcf <- group2_vcf[,-4]
+colnames(group2_vcf@gt)
+
+
+Vietnam_vcf <- read.vcfR("group3_vcf.gz")
+colnames(Vietnam_vcf@gt)
+
+
+Taiwan_vcf <- read.vcfR("group4_vcf.gz")
+colnames(Taiwan_vcf@gt)
+
+
+
+
+
+
+
+
+```
+
+
+
+## DAPC
+
+```{r}
+
+library(adegenet)
+group_vcf <- group1_vcf
+group_vcf@gt <- cbind(group1_vcf@gt, group2_vcf@gt[, -1], Vietnam_vcf@gt[, -1], Taiwan_vcf@gt[, -1])
+
+new_gl <- vcfR2genlight(group_vcf)
+pop1 <- rep("G1",  ncol(group1_vcf@gt)-1)
+pop2 <- rep("G2",  ncol(group2_vcf@gt)-1)
+pop3 <- rep("Vietnam",  ncol(Vietnam_vcf@gt)-1)
+pop4 <- rep("Taiwan",  ncol(Taiwan_vcf@gt)-1)
+
+pop(new_gl) <- c(pop1, pop2, pop3, pop4)
+
+#pca <- glPca(new_gl, parallel = FALSE, nf = 30)
+
+newdapc <- dapc(new_gl, pop = pop(new_gl), n.pca = 50, n.da = 2, parallel = FALSE)
+
+scatter.dapc(newdapc, clabel = 0.75, pch=15:18, scree.pca = F, scree.da = F, 
+        posi.pca = "bottomleft", posi.leg = "topleft", legend = TRUE, 
+        cleg = 1, inset.solid = 1, xax = 1, yax = 2, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+#scatter.dapc(newdapc, clabel = 0.75, pch=15:18, legend = T, posi.leg = "topleft", scree.da = F, lwd = 5, lty = 2)
+
+
+#compoplot(newdapc, posi="bottomright", txt.leg=paste("Group", 1:4), lab="", xlab="individuals", col=rainbow(4))
+
+
+```
+
+## Minimum spanning network
+
+```{r}
+library(poppr)
+msn <- poppr.msn(new_gl , distmat = bitwise.dist(new_gl), palette = rainbow, showplot = F)
+set.seed(111)
+plot_poppr_msn(new_gl , msn, inds = "na")
+
+```
+
+
+## Population differentiation
+
+```{r, eval = FALSE, echo=F}
+
+source("R/subset_vcfbypop.R")
+
+vcf_list <- vcf_bypop(group_vcf, pop = c(pop1, pop2, pop3, pop4))
+#saveRDS(vcf_list, file = "Four_pop_vcf_list.RData", compress = FALSE)
+
+vcf_list <- readRDS("Four_pop_vcf_list.RData")
+
+
+
+Pairs <- function(vcf_list) {
+  pop <- names(vcf_list)
+  pairs <- t(combn(pop,2))
+  colnames(pairs) <- c("pop1", "pop2")
+  as.data.frame(pairs, stringsAsFactors = FALSE)
+}
+
+pop.pairs <- Pairs(vcf_list)
+
+pop.pairs$Pop_Combination <- apply(pop.pairs[, c("pop1", "pop2")], 1, paste, collapse = "-")
+
+out <- vector("list", nrow(pop.pairs))
+names(out) <- pop.pairs$Pop_Combination
+
+temp.vcf <- vcf_list[[1]]
+
+source("genetic_diff.R")
+for (i in 1:nrow(pop.pairs)) {
+
+  pair <- unlist(pop.pairs[i, ])
+
+  pop1 <- pair[1]
+  names(pop1) <- NULL
+  vcf1 <- vcf_list[[grep(pop1, names(vcf_list))]]
+  samp_num1 <- ncol(vcf1@gt) -1
+  pop_len1 <- rep(pop1, samp_num1)
+
+
+  pop2 <- pair[2]
+  names(pop2) <- NULL
+  vcf2 <- vcf_list[[grep(pop2, names(vcf_list))]]
+  samp_num2 <- ncol(vcf2@gt) -1
+  pop_len2 <- rep(pop2, samp_num2)
+
+  pop <- c(pop_len1, pop_len2)
+
+
+  temp.vcf@gt <- cbind(vcf1@gt, vcf2@gt[, -1])
+
+  myDiff <- genetic_diff(temp.vcf, pops = factor(pop))
+  out[[i]] <- myDiff
+
+
+}
+
+#saveRDS(out, file = "out.RData", compress = F)
+
+#out <- readRDS("out.RData")
+pairwise_diff_mat <- function(out) {
+
+pairwise_gst_list <- lapply(out, function(x) colMeans(x[11], na.rm = TRUE))
+pop.pairs$Gstprime <- unlist(pairwise_gst_list)
+pop.pairs
+
+pop <- pop.pairs[, 3:4]
+
+mat <- matrix(NA, nrow = length(vcf_list), ncol = length(vcf_list))
+rownames(mat) <- names(vcf_list)
+colnames(mat) <- names(vcf_list)
+mat[lower.tri(mat)] <- pop$Gstprime
+mat[upper.tri(mat)] <- t(mat)[upper.tri(mat)]
+mat[is.na(mat)] <- 0
+
+return(mat)
+
+}
+
+pairwise_mat <- pairwise_diff_mat(out)
+
+
+library(reshape2)
+pairwise_mat[upper.tri(pairwise_mat)] <- NA
+lower_tri <- melt(pairwise_mat, na.rm = TRUE)
+
+library(ggplot2)
+ggheatmap <- ggplot(lower_tri, aes(x = Var1, y = Var2, fill = value)) + geom_tile(color = "white") +
+  scale_fill_gradient(low = "green", high = "red" , space = "Lab", name="Pairwise GSTprime") + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, size = 18, hjust = 1)) + coord_fixed() +
+  labs(x = "Population", y = "Population") +
+  theme(axis.text.y = element_text(size = 18)) +
+  theme(axis.title = element_text(size = 18)) +
+  geom_text(aes(label = round(value, 2)))
+
+ggheatmap
+
+
+library(ape)
+myNj <- nj(as.dist(pairwise_mat))
+myNj$edge.length[myNj$edge.length < 0] <- 0
+
+plot(myNj, edge.width = 2, main = "NJ tree based on pairwise Gst")
+#add.scale.bar()
+
+plot(hclust(dist(pairwise_mat)))
+
+
+```
+
+## FST estimates
+
+```{r}
+library(strataG)
+
+# group_vcf.genind <- vcfR2genind(group_vcf)
+# group_vcf.genind@pop <- as.factor(c(pop1, pop2, pop3, pop4))
+# 
+# group_vcf.gtypes <- genind2gtypes(group_vcf.genind)
+#saveRDS(group_vcf.gtypes, "group_vcf.gtypes", compress = T)
+
+
+group_vcf.gtypes <- readRDS("group_vcf.gtypes")
+working.gtypes <- group_vcf.gtypes
+working.gtypes@loci <- group_vcf.gtypes@loci[sample(1:length(group_vcf.gtypes@loci), size = 1000)]
+pairwise_fst <- pairwiseTest(working.gtypes, nrep = 10, stats = "fst")
+
+fst_mat <- pairwise_fst$pair.mat$Fst
+fst_mat[upper.tri(fst_mat)] <- t(fst_mat)[upper.tri(fst_mat)]
+fst_mat[is.na(fst_mat)] <- 0
+
+new_fst_mat <- fst_mat
+#saveRDS(new_fst_mat, "new_fst_mat.RData", compress = F)
+plot(ape::nj(as.dist(new_fst_mat)), type = "unrooted", edge.width = 2, rotate.tree = 240)
+add.scale.bar()
+
+plot(ape::nj(as.dist(new_fst_mat)), type = "phylogram")
+add.scale.bar()
+
+plot(nj(dist(new_fst_mat)))
+#heatmap(new_fst_mat)
+#plot(hclust(dist(new_fst_mat)))
+
+library(reshape2)
+fst_mat[upper.tri(fst_mat)] <- NA
+lower_tri <- melt(fst_mat, na.rm = TRUE)
+
+library(ggplot2)
+ggheatmap <- ggplot(lower_tri, aes(x = Var1, y = Var2, fill = value)) + geom_tile(color = "white") + 
+  scale_fill_gradient(low = "green", high = "red" , space = "Lab", name="Pairwise FST") + theme_minimal() + 
+   theme(axis.text.x = element_text(angle = 90, vjust = 1, size = 12, hjust = 1)) + coord_fixed() +
+  labs(x = "Population", y = "Population") +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 12)) +
+  geom_text(aes(label = round(value, 2)))
+
+ggheatmap
+
+
+```
+
+
+## Linkage disequlibrium
+
+```{r}
+library(genetics)
+
+geno <- extract.gt(group1_vcf,return.alleles = T)
+head(geno)
+
+new_geno <- as.data.frame(geno[1:12, 1:3])
+
+g1 <- geno[,1]
+
+g1 <- as.vector(g1)
+
+
+
+g2 <- geno[,2]
+
+g2 <- as.vector(g2)
+
+data <- makeGenotypes(data.frame(g1, g2))
+
+LD(data)
+
+
+
+
+```
+
+
+## Index of association boxplot and barplot using variants with no missing data
+
+```{r, eval=FALSE, include=FALSE}
+
+group_vcf.gl <- vcfR2genlight(group_vcf)
+#group_vcf.gl <- group_vcf.gl[,sample(1:nLoc(group_vcf.gl), 100)]
+pop(group_vcf.gl) <-c(pop1, pop2, pop3, pop4)
+
+
+t <- seppop(group_vcf.gl)
+t1 <- t$G2
+
+# Simulated populations
+### No strcuture (admixed pops)
+sex <- glSim(n.ind = 100, n.snp.nonstruc = ceiling(0.9*nLoc(t1)), n.snp.struc = floor(0.1*nLoc(t1)), ploidy=2, LD=TRUE)
+### Structure (clonal pops)
+clone <- glSim(100, n.snp.nonstruc = floor(0.1*nLoc(t1)), n.snp.struc=ceiling(0.9*nLoc(t1)), ploidy=2, LD = T)
+### Semi-clonal 
+semi_clone <- glSim(100,n.snp.nonstruc = 0.5*nLoc(t1), n.snp.struc= 0.5*nLoc(t1), ploidy=2, LD=T)
+### Most-clonal 
+most_clone <- glSim(100, n.snp.nonstruc = ceiling(nLoc(t1)/3), n.snp.struc=2*nLoc(t1)/3, ploidy=2, LD=T)
+
+## IA sex
+ia.sex <- samp.ia(sex,quiet = T, reps = 100, n.snp = 100)
+## IA clone
+ia.clone <- samp.ia(clone, quiet = T, reps = 100, n.snp = 100)
+## IA.semiclone
+ia.semi <- samp.ia(semi_clone, quiet = T,reps = 100, n.snp = 100)
+## IA.mostclone
+ia.most <- samp.ia(most_clone, quiet = T, reps = 100, n.snp = 100)
+
+ia.cinna <- samp.ia(t1,  reps = 100, quiet = T, n.snp = 100)
+
+# Summarizing data frames
+d1 <- data.frame(ia.cinna, rep("dataset", length(ia.cinna)))
+d2 <- data.frame(ia.sex, rep("sexual", length(ia.sex)))
+d3 <- data.frame(ia.clone, rep("clone", length(ia.clone)))
+d4 <- data.frame(ia.semi, rep("semi-clone", length(ia.semi)))
+d5 <- data.frame(ia.most, rep("most-clone", length(ia.semi)))
+colnames(d1) <- c("ia","dset")
+colnames(d2) <- c("ia","dset")
+colnames(d3) <- c("ia","dset")
+colnames(d4) <- c("ia","dset")
+colnames(d5) <- c("ia","dset")
+ia.total <- rbind(d3, d5, d4, d2, d1)
+#ia.total <- rbind(d1, d2, d3, d4, d5)
+
+# Normality tests
+frames <- list(as.data.frame(d1), as.data.frame(d2), as.data.frame(d3), as.data.frame(d4), as.data.frame(d5))
+normality <- list()
+for (i in 1:length(frames)){
+  normality[[i]] <- shapiro.test(frames[[i]][,'ia'])
+}
+
+# Analysis of variance
+anova.ia <- aov(lm(ia ~ dset, ia.total))
+library(agricolae)
+tukey <- HSD.test(anova.ia, "dset", alpha = 0.001)
+tukey
+# Kluskal wallis test
+#kruskal.test(ia ~ dset, ia.total), trt="dset")
+k.test <- with(ia.total, kruskal(ia, dset, group = T, p.adj = "bon"))
+
+# Plot
+ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Dataset") + ylab("Index of association")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+tree_nj <- aboot(new_gl, tree = "nj", distance = bitwise.dist, sample = 10, showtree = FALSE)
+library(phangorn, quietly = TRUE)
+tree_nj <- midpoint(tree_nj)
+
+countryInfo <- split(tree_nj$tip.label, c(pop1, pop2, pop3, pop4))
+tree2 <- groupOTU(tree_nj, countryInfo)
+
+#tree2$tip.label <- paste(pcinna_pop$Area, pcinna_pop$MT, sep = "_")
+tree2$tip.label <- paste(c(pop1, pop2, pop3, pop4), pcinna_pop$MT, sep = "_")
+tree2$tip.label <- c(pop1, pop2, pop3, pop4)_code
+
+
+
+my_tree <- ggtree(tree2, aes(color=group, label = node), layout='circular') + geom_tiplab(size=3, aes(angle=angle)) 
+
+plot(my_tree)
+
+
+
+```
+
