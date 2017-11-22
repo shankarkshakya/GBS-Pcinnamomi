@@ -38,12 +38,16 @@ remove duplicates: samtools rmdup ${sam[$i]} ${sam[$i]}.rmdup.bam
 
 index bam:samtools index ${bam[$i]}
 
-# Variant Calling using GATK Haplotype caller
+# Calling Variants
 
-See shell script to call variants using GATK Haplotype caller.
+Variants can be called in two different ways.
 
+1. Use indexed bam files to call variants with GATK Haplotype caller.
 
-# Create a txt file with path to list of bam files to be used by GATK
+2. Use indexed bam files to first create gvcfs (genomic vcfs) and later on merge gvcfs to create single vcf file.
+
+Calling variants will need some sort of text file with path to list of bam files. 
+
 
 bash
  
@@ -53,6 +57,10 @@ ls | awk '{system("readlink -f " $1)}' > bam.list
 
 readlink -f *.bam > bam.list
 
+
+# Filtering variants: What is a good variant?
+
+Variants can be filtered on many criterias like mapping quality, read depth, minor allele frequency etc.
 
 
 # Population structure analysis using ADMIXTURE
