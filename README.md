@@ -1,9 +1,6 @@
 # GBS-Pcinnamomi
 
-Phytophthora cinnamomi is pathogen on forest trees, shrubs and trees. ..........
-
-
-
+Phytophthora cinnamomi is an important plant pathogen of forest trees, agricultural crops and horticulture plants. P. cinnamomi is root limited oomycete and is resposible for root rot of avocado in US, jarrah die back in Australia. Because P. cinnamomi is limited to soil and roots, the movement of pathogen happens primarily due to the trade of plants.
 
 # Demultiplexing
 
@@ -28,6 +25,7 @@ sabre se -f ../lane6-s005-index----GBS0162_S5_L006_R1_001.fastq.gz -b GBS0162_sa
 
 # Mapping reads using bowtie2 and processing
 
+```
 bowtie2 --local -x $REF -U ${fq[$i]} --rg-id ${fq[$i]} --rg PU:ill --rg SM:${fq[$i]} --rg PL:Illumina -S ${fq[$i]}.sam
 
 convert sam to bam: samtools view -bS ${sam[$i]} > ${sam[$i]}.bam
@@ -38,6 +36,7 @@ remove duplicates: samtools rmdup ${sam[$i]} ${sam[$i]}.rmdup.bam
 
 index bam:samtools index ${bam[$i]}
 
+```
 # Calling Variants
 
 Variants can be called in two different ways.
