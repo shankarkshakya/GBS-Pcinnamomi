@@ -40,7 +40,7 @@ index bam:samtools index ${bam[$i]}
 ```
 # Calling Variants
 
-Variants can be called in two different ways.
+## Variants can be called in two different ways.
 
 1. Use indexed bam files to call variants with GATK Haplotype caller.
 
