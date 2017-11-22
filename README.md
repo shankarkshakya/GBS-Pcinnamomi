@@ -34,15 +34,13 @@ convert sam to bam: samtools view -bS ${sam[$i]} > ${sam[$i]}.bam
 
 sort bam:samtools sort ${bam[$i]} -o ${bam[$i]}.sorted
 
-index bam:samtools index ${bam[$i]}
-
 remove duplicates: samtools rmdup ${sam[$i]} ${sam[$i]}.rmdup.bam
 
+index bam:samtools index ${bam[$i]}
 
 # Variant Calling using GATK Haplotype caller
 
-
-
+See shell script to call variants using GATK Haplotype caller.
 
 
 # Create a txt file with path to list of bam files to be used by GATK
@@ -54,10 +52,6 @@ for i in `ls *.bam`; do echo "`pwd`/$i"; done > bam.list
 ls | awk '{system("readlink -f " $1)}' > bam.list
 
 readlink -f *.bam > bam.list
-
-
-
-
 
 
 
