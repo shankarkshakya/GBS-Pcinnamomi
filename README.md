@@ -42,7 +42,7 @@ index bam:samtools index ${bam[$i]}
 
 ## Variants can be called in two different ways.
 
-1. Use indexed bam files to call variants with GATK Haplotype caller.
+1. Use indexed bam files to call variants with GATK Haplotype caller. [https://github.com/shankarkshakya/GBS-Pcinnamomi/blob/master/gatk2_1_sge.sh]
 
 2. Use indexed bam files to first create gvcfs (genomic vcfs) and later on merge gvcfs to create single vcf file.
 
