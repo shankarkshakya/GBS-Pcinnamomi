@@ -66,22 +66,27 @@ Variants can be filtered on many criterias like mapping quality, read depth, min
 
 First the vcf file need to be converted into plink format which can be used further by ADMIXTURE.
 
+```
 plink 
 --vcf ../rawGBS/FASTQ/RMDUP_BAMS/Pcinna242.rmdup.gvcf2vcf.vcf.gz 
 --allow-extra-chr 
 --recode12 
 --out Pcinna242.rmdup.gvcf2vcf.vcf
+```
 
 This will result into .log, .map, .nosex and .ped file.
 
-https://www.genetics.ucla.edu/software/admixture/admixture-manual.pdf
+[https://www.genetics.ucla.edu/software/admixture/admixture-manual.pdf]
 
- admixture <inputfile> <K>
- admixture Pcinna242.rmdup.gvcf2vcf.181ind.220Var.vcf.ped 11
+```
+admixture <inputfile> <K>
+admixture Pcinna242.rmdup.gvcf2vcf.181ind.220Var.vcf.ped 11
+```
 
-
+```
 for K in 12 13; 
 do admixture --cv Pcinna242.rmdup.gvcf2vcf.181ind.220Var.vcf.ped $K | tee log${K}.out; 
 done
+```
 
 
