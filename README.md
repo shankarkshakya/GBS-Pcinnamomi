@@ -20,8 +20,9 @@ TATTCGCAT       112-TW97-YilanCo-NE-Taiwan
 ATAGAT  125-TW178-SPen-Taiwan
 CCGAACA 33-S244S1B-Portugal
 
+```
 sabre se -f ../lane6-s005-index----GBS0162_S5_L006_R1_001.fastq.gz -b GBS0162_sabre_barcode.txt -u unknown_barcode.fq
-
+```
 
 # Mapping reads using bowtie2 and processing
 
@@ -48,6 +49,7 @@ Variants can be called in two different ways.
 Calling variants will need some sort of text file with path to list of bam files. 
 
 
+```
 bash
  
 for i in `ls *.bam`; do echo "`pwd`/$i"; done > bam.list
@@ -56,6 +58,7 @@ ls | awk '{system("readlink -f " $1)}' > bam.list
 
 readlink -f *.bam > bam.list
 
+```
 
 # Filtering variants: What is a good variant?
 
