@@ -1,0 +1,109 @@
+---
+title: "Untitled"
+author: "Shankar K Shakya"
+date: "November 22, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(vcfR)
+
+# vcf <- read.vcfR("Pcinna_sojae_1027var.gz")
+# colnames(vcf@gt)
+# 
+# vcf <- vcf[ , -(grep("Rep2.fq|Rep3.fq|254-3579-WAus.fq", colnames(vcf@gt)))]
+
+#vcf <- vcf[, -(grep("68-PH185-France_Rep2.fq|254-3579-WAus.fq", colnames(vcf@gt)))]
+
+
+vcf <- read.vcfR("Pcinna_sojae_1027var_198samples.gz")
+
+library(ggtree)
+library(ggrepel)
+library(poppr)
+library(dplyr)
+library(adegenet)
+
+vcf.gatk.gl <- vcfR2genlight(vcf)
+
+tree_nj <- aboot(vcf.gatk.gl, tree = "nj", distance = bitwise.dist, sample = 10, showtree = F)
+
+library(phangorn, quietly = TRUE)
+#tree_nj <- midpoint(tree_nj)
+tree_nj <- ape::root(tree_nj, outgroup = "Psojae")
+
+plot.phylo(tree_nj, use.edge.length = T)
+
+axis(side = 2)
+plot.phylo(tree_nj, y.lim = c(0,80))
+
+pop <- structure(c(7L, 7L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L, 
+10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L, 10L, 10L, 7L, 
+10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L, 10L, 10L, 10L, 10L, 10L, 
+10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L, 1L, 7L, 1L, 1L, 1L, 1L, 
+1L, 1L, 1L, 7L, 1L, 1L, 1L, 7L, 7L, 1L, 1L, 7L, 9L, 9L, 9L, 9L, 
+7L, 9L, 9L, 9L, 11L, 11L, 1L, 1L, 1L, 1L, 7L, 1L, 1L, 1L, 1L, 
+1L, 1L, 1L, 12L, 12L, 1L, 1L, 1L, 1L, 1L, 1L, 6L, 1L, 12L, 7L, 
+12L, 12L, 12L, 12L, 7L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 
+7L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 12L, 1L, 7L, 1L, 
+1L, 1L, 1L, 1L, 7L, 7L, 7L, 7L, 7L, 7L, 7L, 7L, 7L, 7L, 2L, 2L, 
+2L, 2L, 2L, 7L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 5L, 5L, 5L, 
+5L, 5L, 4L, 4L, 7L, 5L, 5L, 4L, 4L, 7L, 3L, 3L, 3L, 3L, 3L, 6L, 
+6L, 10L, 10L, 10L, 10L, 10L, 10L, 11L, 11L, 11L, 11L, 11L, 11L, 
+11L, 11L, 11L, 11L, 11L, 11L, 11L, 11L, 11L, 11L, 11L, 11L, 11L, 
+8L), .Label = c("Australia", "Chile", "Dominican Republic", "France", 
+"Italy", "PNG", "Portugal", "Psojae", "South Africa", "Taiwan", 
+"USA", "Vietnam"), class = "factor")
+
+
+countryInfo <- split(tree_nj$tip.label, pop)
+tree2 <- groupOTU(tree_nj, countryInfo)
+
+#tree2$tip.label <- paste(pcinna_pop$Area, pcinna_pop$MT, sep = "_")
+tree2$tip.label <- paste(pcinna_pop$Country, pcinna_pop$MT, sep = "_")
+tree2$tip.label <- as.character(pcinna_pop$Area)
+
+
+
+ggtree(tree2, aes(color=group, label = node), layout="circular") + geom_tiplab(size=5, aes(angle=angle)) 
+
+ggtree(tree2, aes(color=group, label = node)) + geom_tiplab(size=3)
+
+
+plot(my_tree)
+
+
+
+```
+
+
+
+```{r}
+all.vcf <- vcf
+gt.filtered <- extract.gt(all.vcf, element = "GT")
+gt.filtered[gt.filtered == "0/0"] <- 0
+gt.filtered[gt.filtered == "0/1"] <- 1
+gt.filtered[gt.filtered == "1/0"] <- 1
+gt.filtered[gt.filtered == "1/1"] <- 2
+# gt.filtered[gt.filtered == "./."] <- "?"
+# gt.filtered[is.na(gt.filtered)] <- "?"
+
+gt.df <- apply(gt.filtered, 2, function (x) paste(x, collapse = ""))
+#write.table(gt.df, file = "multistate.data.phy", quote = F)
+
+
+```
+
+
+
+
+
+
+
+
+
+
