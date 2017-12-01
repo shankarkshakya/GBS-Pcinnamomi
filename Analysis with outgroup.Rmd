@@ -9,37 +9,28 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+## P. cinnamomi isolates (197)
+
 ```{r}
+
+rm(list =ls())
 library(vcfR)
+library(poppr)
 
 # vcf <- read.vcfR("Pcinna_sojae_1027var.gz")
-# colnames(vcf@gt)
-# 
+# colnames(vcf@gt) 
 # vcf <- vcf[ , -(grep("Rep2.fq|Rep3.fq|254-3579-WAus.fq", colnames(vcf@gt)))]
-
 #vcf <- vcf[, -(grep("68-PH185-France_Rep2.fq|254-3579-WAus.fq", colnames(vcf@gt)))]
 
-
 vcf <- read.vcfR("Pcinna_sojae_1027var_198samples.gz")
+#vcf <- vcf[ , -199]
 
-library(ggtree)
-library(ggrepel)
-library(poppr)
-library(dplyr)
-library(adegenet)
+vcf
 
-vcf.gatk.gl <- vcfR2genlight(vcf)
+## convert to genind object 
 
-tree_nj <- aboot(vcf.gatk.gl, tree = "nj", distance = bitwise.dist, sample = 10, showtree = F)
-
-library(phangorn, quietly = TRUE)
-#tree_nj <- midpoint(tree_nj)
-tree_nj <- ape::root(tree_nj, outgroup = "Psojae")
-
-plot.phylo(tree_nj, use.edge.length = T)
-
-axis(side = 2)
-plot.phylo(tree_nj, y.lim = c(0,80))
+vcf.genind <- vcfR2genind(vcf)
 
 pop <- structure(c(7L, 7L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L, 
 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L, 10L, 10L, 7L, 
@@ -59,24 +50,460 @@ pop <- structure(c(7L, 7L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 10L, 7L,
 "Italy", "PNG", "Portugal", "Psojae", "South Africa", "Taiwan", 
 "USA", "Vietnam"), class = "factor")
 
+pop(vcf.genind) <- pop
+#pop(vcf.genind) <- pop[-length(pop)]
 
-countryInfo <- split(tree_nj$tip.label, pop)
+```
+
+
+## Multilocus genotype
+```{r}
+
+mlg.table(vcf.genind)
+mlg.crosspop(vcf.genind)
+
+```
+
+## convert to genlight and Minimum spanning network
+
+```{r, eval=F}
+
+vcf.gl <- vcfR2genlight(vcf)
+#pop(vcf.gl) <- pop[-length(pop)]
+pop(vcf.gl) <- pop
+
+library(RColorBrewer)
+library(pals)
+
+myCol <- alphabet(n = 12) %>% setNames(popNames(vcf.gl))
+
+msn <- poppr.msn(vcf.gl , distmat = bitwise.dist(vcf.gl ), palette = myCol, showplot = F)
+set.seed(100)
+plot_poppr_msn(vcf.gl , msn, inds = "na")
+
+
+```
+
+
+## Neighbor joining tree
+
+```{r}
+
+library(ggtree)
+library(ggrepel)
+library(poppr)
+library(dplyr)
+library(adegenet)
+
+vcf.gl <- vcfR2genlight(vcf)
+
+tree_nj <- aboot(vcf.gl, tree = "nj", distance = bitwise.dist, sample = 10, showtree = F, cutoff = 50)
+
+library(phangorn, quietly = TRUE)
+#tree_nj <- midpoint(tree_nj)
+tree_nj <- ape::root(tree_nj, outgroup = "Psojae")
+
+
+countryInfo <- split(tree_nj$tip.label, pop(vcf.genind))
 tree2 <- groupOTU(tree_nj, countryInfo)
 
-#tree2$tip.label <- paste(pcinna_pop$Area, pcinna_pop$MT, sep = "_")
+tiplabels <- unlist(strsplit(tree2$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% tiplabels, ]
+pcinna_pop <- pcinna_pop[match(tiplabels, pcinna_pop$Isolate), ]
+
+
 tree2$tip.label <- paste(pcinna_pop$Country, pcinna_pop$MT, sep = "_")
-tree2$tip.label <- as.character(pcinna_pop$Area)
+tree2$tip.label[198] <- "Psojae"
+
+ggtree(tree2, aes(color=group, label = node), layout="circular") + 
+  geom_tiplab(size=3, aes(angle=angle)) 
+
+ggtree(tree2, aes(color=group)) + 
+  geom_tiplab(size=3) + 
+  geom_text2(aes(subset=!isTip, label=node), hjust=-0.3) + geom_treescale()
 
 
 
-ggtree(tree2, aes(color=group, label = node), layout="circular") + geom_tiplab(size=5, aes(angle=angle)) 
-
-ggtree(tree2, aes(color=group, label = node)) + geom_tiplab(size=3)
 
 
-plot(my_tree)
+```
 
 
+## DAPC
+
+```{r}
+
+library(poppr)
+
+vcf.gl <- vcfR2genlight(vcf)
+pop(vcf.gl) <- pop[-length(pop)]
+
+mydapc <- dapc(vcf.gl, pop = pop(vcf.gl), parallel = F,  n.pca = 50, n.da = 5)
+
+scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 1, yax = 2, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+
+
+
+```
+
+## Index of association
+
+```{r, eval=FALSE, include=FALSE}
+
+vcf.gl <- vcfR2genlight(vcf)
+pop(vcf.gl) <- pop[-length(pop)]
+
+t <- seppop(vcf.gl)
+
+t1 <- clonecorrect(as.snpclone(t$Taiwan))
+
+set.seed(100)
+sex <- glSim(n.ind = nInd(t1), n.snp.nonstruc = ceiling(0.9*nLoc(t1)), n.snp.struc = floor(0.1*nLoc(t1)), ploidy=2, LD=TRUE)
+### Structure (clonal pops)
+clone <- glSim(nInd(t1), n.snp.nonstruc = floor(0.1*nLoc(t1)), n.snp.struc=ceiling(0.9*nLoc(t1)), ploidy=2, LD = T)
+### Semi-clonal 
+semi_clone <- glSim(nInd(t1),n.snp.nonstruc = 0.5*nLoc(t1), n.snp.struc= 0.5*nLoc(t1), ploidy=2, LD=T)
+### Most-clonal 
+most_clone <- glSim(nInd(t1), n.snp.nonstruc = ceiling(nLoc(t1)/3), n.snp.struc=2*nLoc(t1)/3, ploidy=2, LD=T)
+
+## IA sex
+ia.sex <- samp.ia(sex,quiet = T, reps = 100, n.snp = 100)
+## IA clone
+ia.clone <- samp.ia(clone, quiet = T, reps = 100, n.snp = 100)
+## IA.semiclone
+ia.semi <- samp.ia(semi_clone, quiet = T,reps = 100, n.snp = 100)
+## IA.mostclone
+ia.most <- samp.ia(most_clone, quiet = T, reps = 100, n.snp = 100)
+
+ia.cinna <- samp.ia(t1,  reps = 100, quiet = T, n.snp = 100)
+
+# Summarizing data frames
+d1 <- data.frame(ia.cinna, rep("dataset", length(ia.cinna)))
+d2 <- data.frame(ia.sex, rep("sexual", length(ia.sex)))
+d3 <- data.frame(ia.clone, rep("clone", length(ia.clone)))
+d4 <- data.frame(ia.semi, rep("semi-clone", length(ia.semi)))
+d5 <- data.frame(ia.most, rep("most-clone", length(ia.semi)))
+colnames(d1) <- c("ia","dset")
+colnames(d2) <- c("ia","dset")
+colnames(d3) <- c("ia","dset")
+colnames(d4) <- c("ia","dset")
+colnames(d5) <- c("ia","dset")
+ia.total <- rbind(d3, d5, d4, d2, d1)
+#ia.total <- rbind(d1, d2, d3, d4, d5)
+
+# Normality tests
+frames <- list(as.data.frame(d1), as.data.frame(d2), as.data.frame(d3), as.data.frame(d4), as.data.frame(d5))
+normality <- list()
+for (i in 1:length(frames)){
+  normality[[i]] <- shapiro.test(frames[[i]][,'ia'])
+}
+
+# Analysis of variance
+anova.ia <- aov(lm(ia ~ dset, ia.total))
+library(agricolae)
+tukey <- HSD.test(anova.ia, "dset", alpha = 0.001)
+tukey
+# Kluskal wallis test
+#kruskal.test(ia ~ dset, ia.total), trt="dset")
+k.test <- with(ia.total, kruskal(ia, dset, group = T, p.adj = "bon"))
+
+# Plot
+ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Dataset") + ylab("Index of association")
+
+
+```
+
+## FST estimates
+
+```{r}
+library(strataG)
+
+group_vcf.genind <- vcfR2genind(group_vcf)
+group_vcf.genind@pop <- as.factor(c(pop1, pop2, pop3, pop4, pop5))
+# 
+group_vcf.gtypes <- genind2gtypes(group_vcf.genind)
+#saveRDS(group_vcf.gtypes, "group_vcf.gtypes", compress = T)
+
+
+#group_vcf.gtypes <- readRDS("group_vcf.gtypes")
+working.gtypes <- group_vcf.gtypes
+set.seed(100)
+working.gtypes@loci <- group_vcf.gtypes@loci[sample(1:length(group_vcf.gtypes@loci), size = 100)]
+pairwise_fst <- pairwiseTest(working.gtypes, nrep = 10, stats = "gst.prime")
+
+fst_mat <- pairwise_fst$pair.mat$`G'st`
+fst_mat[upper.tri(fst_mat)] <- t(fst_mat)[upper.tri(fst_mat)]
+fst_mat[is.na(fst_mat)] <- 0
+
+new_fst_mat <- fst_mat
+#saveRDS(new_fst_mat, "new_fst_mat.RData", compress = F)
+plot(ape::nj(as.dist(new_fst_mat)), type = "unrooted", edge.width = 2, rotate.tree = 240)
+add.scale.bar()
+
+plot(ape::nj(as.dist(new_fst_mat)), type = "phylogram")
+add.scale.bar()
+
+plot(nj(dist(new_fst_mat)))
+#heatmap(new_fst_mat)
+#plot(hclust(dist(new_fst_mat)))
+
+library(reshape2)
+fst_mat[upper.tri(fst_mat)] <- NA
+lower_tri <- melt(fst_mat, na.rm = TRUE)
+
+library(ggplot2)
+ggheatmap <- ggplot(lower_tri, aes(x = Var1, y = Var2, fill = value)) + geom_tile(color = "white") + 
+  scale_fill_gradient(low = "green", high = "red" , space = "Lab", name="Pairwise FST") + theme_minimal() + 
+   theme(axis.text.x = element_text(angle = 90, vjust = 1, size = 12, hjust = 1)) + coord_fixed() +
+  labs(x = "Population", y = "Population") +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 12)) +
+  geom_text(aes(label = round(value, 2)))
+
+ggheatmap
+
+
+
+library(mmod)
+
+set.seed(100)
+test_vcf.genind <- vcfR2genind(group_vcf[sample(1:7002, size = 100), ])
+test_vcf.genind@pop <- as.factor(c(pop1, pop2, pop3, pop4, pop5))
+
+pairwise_Gst_Hedrick(test_vcf.genind) 
+
+```
+
+
+## ADMIXTURE analysis
+
+### Plotting cross validation error
+
+```{r Cross validaion error, echo=TRUE}
+
+library(ggplot2)
+cv <- read.table(file.path("./qmatrices/CV_error.txt")) 
+cv <- cv[,c(3:4)]
+colnames(cv) <- c("K", "Cross_Validation_Error")
+cv <- cv[order(readr::parse_number(cv$K)), ]
+cv$K <- factor(cv$K, levels = cv$K)
+
+ggplot(data = cv, aes(K, Cross_Validation_Error)) + geom_point(size  = 5) +
+  theme(axis.text.x = element_text(size = 15)) +
+  theme(axis.text.y = element_text(size = 15))
+
+```
+
+This is very similar to STRUCTURE plot.
+
+```{r, admixture}
+
+library(reshape2)
+qmat_files <- list.files("../GBS-Pcinnamomi/qmatrices/")
+
+source("admix_plot.R")
+
+plot_list <- vector("list", length(qmat_files))
+
+for (k in 1:length(qmat_files)) {
+    qmat <- read.table(file.path("qmatrices/", qmat_files[k]))
+    colnames(qmat) <- paste("Group", seq(1:ncol(qmat)), sep = ".")
+
+    qmat <- cbind(pop, qmat)
+    colnames(qmat)[1] <- "POP"
+    key <-  c("Australia" = "AUS", "Chile"= "CHL", "Dominican Republic " ="DOMREP", 
+              "France"= "FRA", "Italy"= "ITL","PNG"= "PNG", "Portugal"= "PORT",
+              "South Africa"= "SA","USA"= "USA",
+              "Taiwan"= "TWN","Vietnam"= "VNM")
+    
+    
+    qmat$POP <- factor(key[qmat$POP], levels = unique(qmat$POP)[c(10, 11, 6, 9, 2, 1, 3,4,6, 5,7,8)], ordered = T)
+    
+    temp_plot <- admix_plot(qmat, horiz = F)
+    temp_plot <- temp_plot + theme(axis.text.x = element_text(angle = 60, size = 15)) + theme_classic() 
+
+    plot_list[[k]] <- temp_plot
+    
+} 
+
+    
+
+library(cowplot)
+
+qmat_files
+plot_grid(plotlist = plot_list[9:11], nrow = 3, ncol = 1)    
+plot_grid(plotlist = plot_list[12:14], nrow = 3, ncol = 1) 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r, eval=F, echo=F}
+
+vcf.genind.clonecorrect <- clonecorrect(vcf.genind)
+clonecorrected_vcf <- vcf[ , c(1, which(colnames(vcf@gt) %in% indNames(vcf.genind.clonecorrect)))]
+
+
+library(RColorBrewer)
+library(pals)
+
+vcf.gatk.gl <- vcfR2genlight(clonecorrected_vcf)
+pop(vcf.gatk.gl) <- as.character(pop(vcf.genind.clonecorrect))
+myCol <- alphabet(n = 13) %>% setNames(popNames(vcf.gatk.gl))
+
+msn <- poppr.msn(vcf.gatk.gl , distmat = bitwise.dist(vcf.gatk.gl ), palette = myCol, showplot = F)
+set.seed(100)
+plot_poppr_msn(vcf.gatk.gl , msn, inds = "na")
+
+
+
+library(ggtree)
+library(ggrepel)
+library(poppr)
+library(dplyr)
+library(adegenet)
+
+vcf.gatk.gl <- vcfR2genlight(clonecorrected_vcf)
+
+tree_nj <- aboot(vcf.gatk.gl, tree = "nj", distance = bitwise.dist, sample = 10, showtree = F, cutoff = 50)
+
+library(phangorn, quietly = TRUE)
+tree_nj <- midpoint(tree_nj)
+#tree_nj <- ape::root(tree_nj, outgroup = "Psojae")
+
+
+countryInfo <- split(tree_nj$tip.label, pop(vcf.genind.clonecorrect))
+tree2 <- groupOTU(tree_nj, countryInfo)
+
+
+#tree2$tip.label <- as.character(pop(vcf.genind.clonecorrect))
+
+ggtree(tree2, aes(color=group, label = node), layout="circular") + geom_tiplab(size=3, aes(angle=angle)) 
+
+tiplabels <- unlist(strsplit(tree2$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% tiplabels, ]
+pcinna_pop <- pcinna_pop[match(tiplabels, pcinna_pop$Isolate), ]
+
+tree2$tip.label <- paste(pcinna_pop$Country, pcinna_pop$MT, sep = "_")
+plot.phylo(tree2, use.edge.length = F)
+
+# 
+# axis(side = 2)
+# #axis(side = 1)
+# 
+# 
+# plot.phylo(tree2, y.lim = c(150, 200))
+# 
+# 
+# plot.phylo(tree2, y.lim = c(0, 80), x.lim = c(0, 220))
+# nodelabels(adj = 1, frame = "n", cex = 1)
+
+
+
+group1 <- extract.clade(tree2, node = 176)
+plot(group1)
+
+group1_vcf <-  clonecorrected_vcf[, c(1, which(colnames(clonecorrected_vcf@gt) %in% group1$tip.label))]
+
+
+group2 <- extract.clade(tree2, node = 239)
+plot(group2)
+
+group2_vcf <-  clonecorrected_vcf[, c(1, which(colnames( clonecorrected_vcf@gt) %in% group2$tip.label))]
+
+
+group3 <- extract.clade(tree2, node = 304)
+plot(group3)
+group3_vcf <-  clonecorrected_vcf[, c(1, which(colnames( clonecorrected_vcf@gt) %in% group3$tip.label))]
+
+library(adegenet)
+group_vcf <- group1_vcf
+group_vcf@gt <- cbind(group1_vcf@gt, group2_vcf@gt[, -1], group3_vcf@gt[, -1])
+
+new_gl <- vcfR2genlight(group_vcf)
+pop1 <- rep("G1",  ncol(group1_vcf@gt)-1)
+pop2 <- rep("G2",  ncol(group2_vcf@gt)-1)
+pop3 <- rep("G3",  ncol(group3_vcf@gt)-1)
+
+
+pop(new_gl) <- c(pop1, pop2, pop3)
+
+newdapc <- dapc(new_gl, pop = pop(new_gl), n.pca = 50, n.da = 2, parallel = FALSE)
+
+scatter.dapc(newdapc, clabel = 0.75, pch=15:18, scree.pca = F, scree.da = F, 
+        posi.pca = "bottomleft", posi.leg = "topleft", legend = TRUE, 
+        cleg = 1, inset.solid = 1, xax = 1, yax = 2, cex.lab = 1, cex = 1.5, solid = 1, cstar = 0)
+
+
+
+
+
+
+```
+
+## Minimum spanning network
+
+```{r,echo=TRUE, fig.align="center", fig.width=12, fig.height=12}
+
+library(RColorBrewer)
+library(pals)
+
+pop(vcf.gatk.gl) <- as.character(pop(vcf.genind.clonecorrect))
+
+
+myCol <- alphabet(n = 13) %>% setNames(popNames(vcf.gatk.gl))
+
+msn <- poppr.msn(vcf.gatk.gl , distmat = bitwise.dist(vcf.gatk.gl ), palette = myCol, showplot = F)
+set.seed(999)
+plot_poppr_msn(vcf.gatk.gl , msn, inds = "na")
+
+
+```
+
+
+
+## Discriminant analysis of principal components
+
+
+```{r, echo=TRUE, fig.align="center", fig.width=12, fig.height=12}
+
+library(poppr)
+
+pop(vcf.gatk.gl) <- as.character(pop(vcf.genind.clonecorrect))
+mydapc <- dapc(vcf.gatk.gl, pop = pop(vcf.gatk.gl), parallel = F,  n.pca = 50, n.da = 5)
+
+scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
 
 ```
 
@@ -97,6 +524,9 @@ gt.df <- apply(gt.filtered, 2, function (x) paste(x, collapse = ""))
 
 
 ```
+
+
+
 
 
 
