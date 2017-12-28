@@ -1,0 +1,9 @@
+ 	Full Command:                      ./raxml.sh 205isolates.phy 
+	Memory (kb):                       434276 
+	# SWAP  (freq):                    0 
+	# Waits (freq):                    5296 
+	CPU (percent):                     99% 
+	Time (seconds):                    17094.57 
+	Time (hh:mm:ss.ms):                4:44:54 
+	System CPU Time (seconds):         5.37 
+	User   CPU Time (seconds):         17085.92 
