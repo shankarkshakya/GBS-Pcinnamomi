@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(pals)
 ```
 
 ## Preparing vcf file
@@ -94,8 +95,108 @@ vcf_cinna <- vcf[ , -ncol(vcf_cinna_sojae@gt)]
 
 ```
 
+## Haplotype diversity and number of unique haplotypes
+
+```{r, fig.align="center", fig.height=12, fig.width=12}
+
+#vcf_cinna
+#pop_cinna
+
+gt_cinna <- extract.gt(vcf_cinna, element = "GT", return.alleles = TRUE)
+gt_cinna <- alleles2consensus(gt_cinna)
+gt_cinna <- t(gt_cinna)
+
+library(ape)
+gt_cinna_dnabin <- as.DNAbin(gt_cinna)
+rownames(gt_cinna_dnabin) <- paste("Pop", pop_cinna, sep = "_")
+
+library(pegas)
+h <- haplotype(gt_cinna_dnabin)
+h <- sort(h, what = "label")
+
+h.freq <- haploFreq(gt_cinna_dnabin, haplo = h)
+
+rownames(h.freq) <- paste("Haplotype", 1:nrow(h.freq), sep = "_")
+
+h.freq.df <- as.data.frame(h.freq)
+h.freq.mat <- h.freq
+
+
+# barplot(colSums(h.freq > 0) / colSums(h.freq)) ##Haplotypic diversity
+# barplot(colSums(h.freq.df > 0) /17) ##Haplotypic diversity corrected for sample size 
+
+
+hap.div <- as.data.frame(colSums(h.freq.df > 0) /17)
+colnames(hap.div) <- "Haplotype_diversity"
+
+
+#tiff("./MANUSCRIPT_FIGS/Haplotype_diversity_proabablity.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = hap.div,  aes(x = rownames(hap.div), y =  Haplotype_diversity, fill = rownames(hap.div))) + 
+  geom_bar(stat = "identity") +
+  theme(legend.position="none") +
+  theme(legend.text = element_text(size = 10)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Haplotype diversity") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) 
+
+#dev.off()
+
+```
+
+## Haplonet plots
+
+```{r}
+
+nt <- haploNet(h)
+fq <- attr(nt, "freq")
+
+#tiff("./MANUSCRIPT_FIGS/Haplotype_diversity.tiff", width = 7, height = 7, units = "in", res = 600)
+
+plot(nt, size = 4,labels =F, lwd = 0.5, asp =1.5, fast = T, 
+     show.mutation = F, threshold = 0, pie = h.freq.mat, bg = alphabet(n = ncol(h.freq)))
+
+legend(-31, 13, colnames(h.freq), fill=alphabet(n = ncol(h.freq)), 
+       cex=1, horiz = FALSE, ncol = 1, box.col = "white", bg = "transparent", bty = "n")
+
+#dev.off()
+
+
+#tiff("./MANUSCRIPT_FIGS/Haplotype_diversity2.tiff", width = 7, height = 7, units = "in", res = 600)
+
+plot(nt, size = attr(nt, "freq"),labels =F, lwd = 0.5, asp =1.5, fast = T, 
+     show.mutation = F, threshold = 0, pie = h.freq.mat, bg = alphabet(n = ncol(h.freq)))
+
+legend(-145, 55, colnames(h.freq), fill=alphabet(n = ncol(h.freq)), 
+       cex=1, horiz = FALSE, ncol = 1, box.col = "white", bg = "transparent", bty = "n")
+
+#dev.off()
+
+```
+
+## Number of unique haplotypes
+
+```{r}
+
+head(h.freq.df) 
+
+uniq_haplotypes <- h.freq.df[rowSums(h.freq.df > 0) == 1 , ]
+
+colSums(uniq_haplotypes > 0) 
+
+## 8 Vietnam
+## 2 Taiwan
+## 1 South Africa
+
+
+```
+
+
 
 ## Multilocus genotype and shared MLGs
+
 ```{r, echo=TRUE, fig.align="center", fig.width=12, fig.height=12}
 
 vcf.genind <- vcfR2genind(vcf_cinna)
@@ -270,7 +371,7 @@ ggtree(tree2, aes(color=group, label = node), ladderize = TRUE) +  geom_tiplab(s
 
 ## Reconstructing ancestral states
 
-```{r}
+```{r, eval = F}
 
 library(ape)
 mytree <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
@@ -312,8 +413,7 @@ cols <- setNames(alphabet(n=17)[1:length(unique(x))],sort(unique(x)))
 
 tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.2)
 
-add.simmap.legend(colors=cols,prompt=T,x=0.9*par()$usr[1],
-                  y=-max(nodeHeights(tree)),fsize=0.8)
+#add.simmap.legend(colors=cols,prompt=F,x=0.9*par()$usr[1], y=-max(nodeHeights(tree)),fsize=0.8)
 
 ## Fitting ER model
 
