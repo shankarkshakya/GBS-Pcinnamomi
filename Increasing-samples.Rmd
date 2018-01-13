@@ -9,15 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(pals)
 library(mypackage)
+library(cowplot)
 ```
 
 ## Preparing vcf file
 
-```{r, eval=FALSE, echo=TRUE}
+```{r, eval=FALSE, include=FALSE}
 
 rm(list = ls())
-library(vcfR, quietly = T)
-library(poppr, quietly = T)
+library(vcfR, quietly = T, verbose = F)
+library(poppr, quietly = T, verbose = F)
 library(ggplot2, quietly = T)
 library(reshape2, quietly = T)
 library(mypackage)
@@ -57,22 +58,20 @@ vcf@gt <- cbind(vcf@gt, Psojae@gt[, 2])
 
 ## Reading prepared vcf file.
 
-Total isolates 203 with 1027 variants (1010 SNPS, 17 indels) with P.sojae as an outgroup
-
 ```{r, fig.align="center", fig.height=12, fig.width=12}
 
-library(vcfR, quietly = T)
-library(poppr, quietly = T)
-library(ggplot2, quietly = T)
-library(reshape2, quietly = T)
+library(vcfR, quietly = T, verbose = F)
+library(poppr, quietly = T, verbose = F)
+library(ggplot2, quietly = T, verbose = F)
+library(reshape2, quietly = T, verbose = F)
 
-vcf <- read.vcfR("Min10x_cov_205isolates_895Variants.gz")
+vcf <- read.vcfR("Min10x_cov_205isolates_895Variants.gz", verbose = F)
+vcf <- vcf[which(is.polymorphic(vcf)), ]
 
-dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
-par(mar=c(12,4,4,2))
-#boxplot(dp, col=2:8, las=3)
-boxplot(dp, col=2:8, xaxt="n")
-title(ylab = "Depth (DP)")
+# dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+# par(mar=c(12,4,4,2))
+# boxplot(dp, col=2:8, xaxt="n")
+# title(ylab = "Depth (DP)")
 
 id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
 pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
@@ -101,12 +100,12 @@ gt_cinna <- extract.gt(vcf_cinna, element = "GT", return.alleles = TRUE)
 gt_cinna <- alleles2consensus(gt_cinna)
 gt_cinna <- t(gt_cinna)
 
-library(ape)
+library(ape, verbose = F,quietly = T)
 gt_cinna_dnabin <- as.DNAbin(gt_cinna)
 rownames(gt_cinna_dnabin) <- paste("Pop", pop_cinna, sep = "_")
 
-library(pegas)
-h <- haplotype(gt_cinna_dnabin)
+library(pegas, verbose = F,quietly = T)
+h <- pegas::haplotype(gt_cinna_dnabin)
 h <- sort(h, what = "label")
 
 h.freq <- haploFreq(gt_cinna_dnabin, haplo = h)
@@ -114,10 +113,14 @@ h.freq <- haploFreq(gt_cinna_dnabin, haplo = h)
 rownames(h.freq) <- paste("Haplotype", 1:nrow(h.freq), sep = "_")
 
 h.freq.df <- as.data.frame(h.freq)
+head(h.freq.df)
 h.freq.mat <- h.freq
 
-hap.percent <- as.data.frame(colSums(h.freq.df > 0) / 17)
+hap.percent <- as.data.frame(colSums(h.freq.df > 0) / nrow(h.freq.df))
 colnames(hap.percent) <- "Haplotype_diversity"
+
+hap.percent <- hap.percent[order(hap.percent, decreasing = T), 1, drop = F]
+
 
 #tiff("./MANUSCRIPT_FIGS/Percent observed haplotypes.tiff", width = 7, height = 7, units = "in", res = 600)
 
@@ -133,16 +136,15 @@ ggplot(data = hap.percent,  aes(x = rownames(hap.percent), y =  Haplotype_divers
 
 #dev.off()
 
-source("R/hap.div.R")
-
+#source("R/hap.div.R")
 #h.freq.df <- h.freq.df[, colSums(h.freq.df) > 5]
+#Haplotype_diversity <- t(hap.div(h.freq.df))
 
-Haplotype_diversity <- t(hap.div(h.freq.df))
+Haplotype_diversity <- t(hap.div(dnabin = as.DNAbin(gt_cinna), pop = pop_cinna))
 Haplotype_diversity[is.nan(Haplotype_diversity)] = 0
 
 Haplotype_diversity <- as.data.frame(Haplotype_diversity)
 colnames(Haplotype_diversity) <- "HD"
-
 
 #tiff("./MANUSCRIPT_FIGS/Fig3.Haplotype diversity_min5samples.tiff", width = 7, height = 7, units = "in", res = 600)
 
@@ -157,11 +159,19 @@ ggplot(data = Haplotype_diversity,  aes(x = rownames(Haplotype_diversity), y = H
 
 #dev.off()
 
+
+
+
+
+
+
+
+
 ```
 
 ## Haplonet plots
 
-```{r}
+```{r, fig.height=12, fig.width=12}
 
 library(pals)
 nt <- haploNet(h)
@@ -193,7 +203,7 @@ legend(-145, 55, colnames(h.freq), fill=alphabet(n = ncol(h.freq)),
 
 ## Number of unique haplotypes
 
-```{r}
+```{r, fig.height=12, fig.width=12}
 
 
 uniq_haplotypes <- h.freq.df[rowSums(h.freq.df > 0) == 1 , ]
@@ -213,481 +223,63 @@ uniq_haplotypes <- as.data.frame(colSums(uniq_haplotypes > 0))
 ```{r}
 
 absolute_haplo <- as.data.frame(colSums(h.freq.df > 0))   ##observed haplotypes
-uniq_haplotypes ## uniq haplotypes
-Haplotype_diversity ## diversity
+#Haplotype_diversity ## diversity
 
 nsamples <-  as.data.frame(colSums(h.freq.df))
 
 Table2 <- cbind(nsamples, absolute_haplo, uniq_haplotypes, Haplotype_diversity)
 colnames(Table2) <- c("Number of isolates", "Observed Haplotypes", "Unique haplotypes", "Haplotype diversity")
 
+Table2
+
 #write.csv(Table2, "./MANUSCRIPT_TABLE/Table2.csv")
 
 ```
 
+## Number of heterozygous sites
 
-## Mating type ratio expectation of 1:1
+```{r, eval = F, include=FALSE}
 
-Performing binomial test for Taiwan and Vietnam for 1:1 A1 A2 ratio.
+gt <- extract.gt(vcf_cinna)
+hets <- is_het(gt)
+sum_het <- colSums(hets)
 
-```{r}
+sum_het.pop <- as.data.frame(sum_het)
+sum_het.pop <- cbind(Isolate = rownames(sum_het.pop), Country = pop_cinna, Heterozygosity = sum_het.pop)
+rownames(sum_het.pop) <- NULL
 
-## Taiwan.
-vcf <- read.vcfR("Min10x_cov_205isolates_895Variants.gz")
-
-id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
-pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
-pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
-pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
-
-Taiwan <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN")
-
-library(dplyr)
-Taiwan_A1 <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN" & pcinna_pop$MT == "A1")
-Taiwan_A2 <- Taiwan[setdiff(rownames(Taiwan), rownames(Taiwan_A1)), ] 
-
-# Taiwan_A2 <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN" & pcinna_pop$MT == "A2" | "A2_Homothallic")
-# nrow(Taiwan_A2)
-
-binom.test(c(nrow(Taiwan_A1), nrow(Taiwan_A2)), p = 0.5)
+ggplot(sum_het.pop, aes(x = Country, y = sum_het, fill = Country)) + geom_boxplot(outlier.shape = NA) + geom_jitter() +
+  #ggtitle("Number of heterozygous sites") +
+  labs(x = "Population", y = "Number of heterozygous position") +
+  theme(axis.text.x = element_text(size =12, angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size =12)) + theme(legend.position = "none") +
+  theme(plot.title = element_text(size = 30)) +
+  theme(axis.title = element_text(size = 25))
 
 
-## Vietnam
-
-Vietnam <- subset(pcinna_pop, pcinna_pop$Country_code == "VNM")
-
-library(dplyr)
-Vietnam_A1 <- subset(pcinna_pop, pcinna_pop$Country_code == "VNM" & pcinna_pop$MT == "A1")
-Vietnam_A2 <- Vietnam[setdiff(rownames(Vietnam), rownames(Vietnam_A1)), ] 
-
-
-binom.test(c(nrow(Vietnam_A1), nrow(Vietnam_A2)), p = 0.5)
-
-```
-
-
-
-## Multilocus genotype and shared MLGs
-
-```{r, echo=TRUE, fig.align="center", fig.width=12, fig.height=12}
-
-vcf.genind <- vcfR2genind(vcf_cinna)
-pop(vcf.genind) <- pop_cinna
-
-tab <- mlg.table(vcf.genind)
-mlg.crosspop(vcf.genind)
-
+# vcf_cinna_het <- vcf_cinna[as.numeric(which(rowSums(hets) != 0)), ]
+# gt <- extract.gt(vcf_cinna_het)
+# hets <- is_het(gt)
+# sum_het <- colSums(hets)
+# 
+# sum_het.pop <- as.data.frame(sum_het)
+# sum_het.pop <- cbind(Isolate = rownames(sum_het.pop), Country = pop_cinna, Heterozygosity = sum_het.pop)
+# rownames(sum_het.pop) <- NULL
+# 
+# ggplot(sum_het.pop, aes(x = Country, y = sum_het, fill = Country)) + geom_boxplot(outlier.shape = NA) + geom_jitter() +
+#   #ggtitle("Number of heterozygous sites") +
+#   labs(x = "Population", y = "Number of heterozygous position") +
+#   theme(axis.text.x = element_text(size =12, angle = 60, hjust = 1)) +
+#   theme(axis.text.y = element_text(size =12)) + theme(legend.position = "none") +
+#   theme(plot.title = element_text(size = 30)) +
+#   theme(axis.title = element_text(size = 25))
 
 ```
 
-## Neighbor joining tree
-
-```{r, fig.align="center", fig.height=12, fig.width=12}
-library(ggtree)
-library(ggrepel)
-library(poppr)
-library(dplyr)
-library(adegenet)
-library(ape)
-
-vcf.gl <- vcfR2genlight(vcf_cinna)
-
-tree_nj <- aboot(vcf.gl, tree = "nj", distance = bitwise.dist, sample = 100, showtree = F, cutoff = 50)
-
-library(phangorn, quietly = TRUE)
-tree_nj <- midpoint(tree_nj)
-
-countryInfo <- split(tree_nj$tip.label, pop_cinna)
-tree2 <- groupOTU(tree_nj, countryInfo)
-
-tree2$tip.label <- paste(pcinna_pop$Country_code, pcinna_pop$MT, sep = "_")
- 
-ggtree(tree2, aes(color=group, label = node), layout="circular", ladderize = TRUE) +
-  geom_tiplab(size=3, aes(angle=angle))
-
-
-
-ind_names <- tree_nj$tip.label
-tips <- unlist(strsplit(ind_names, split = ".fq"))
-tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
-len <- length(which(duplicated(tips)))
-tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
-ids <- as.data.frame(tips)
-ids[2] <- pop_cinna
-rownames(ids) <- ind_names
-ids <- ids[2]
-ids <- as.matrix(ids)[, 1]
-
-x.dict <- ids
-
-library(pals)
-library(phytools)
-
-#tiff("./MANUSCRIPT_FIGS/NJ.tiff", width = 10, height = 7, units = "in", res = 600)
-plot(ladderize(tree_nj), type = "fan", show.tip.label = F)
-
-mycol <- alphabet(n=17)
-cols <- setNames(mycol[1:length(unique(x.dict))],sort(unique(x.dict)))
-tiplabels(pie=to.matrix(x.dict,sort(unique(x.dict))), piecol = mycol,cex=0.25)
-add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
-
-#dev.off()
-
-# ggtree(tree2, aes(color=group)) +
-#   geom_tiplab(size=3) +
-#   geom_text2(aes(subset=!isTip, label=node), hjust=-0.3) + geom_treescale()
-
-
-
-## With PSojae
-
-vcf.gl_sojae <- vcfR2genlight(vcf_cinna_sojae)
-
-tree_nj_sojae <- aboot(vcf.gl_sojae, tree = "nj", distance = bitwise.dist, sample = 1000, showtree = F, cutoff = 50)
-
-library(phangorn, quietly = TRUE)
-
-tree_nj_sojae <- ape::root(tree_nj_sojae, outgroup = "Psojae")
-
-
-countryInfo <- split(tree_nj_sojae$tip.label, pop_cinna_sojae)
-tree2_sojae <- groupOTU(tree_nj_sojae, countryInfo)
-
-
-tree2_sojae$tip.label <- paste(pcinna_pop$Country_code, pcinna_pop$MT, sep = "_")
-tree2_sojae$tip.label[205] <- "Psojae"
-
-ggtree(tree2_sojae, aes(color=group, label = node), layout="circular", ladderize = TRUE) +
-  geom_tiplab(size=3, aes(angle=angle))
-
-# ggtree(tree2_sojae, aes(color=group, label = node), ladderize = TRUE) +
-#   geom_tiplab(size=3)
-
-```
-
-
-## convert to genlight and Minimum spanning network
-
-```{r, eval=F}
-
-vcf.gl <- vcfR2genlight(vcf_cinna)
-#pop(vcf.gl) <- pop[-length(pop)]
-pop(vcf.gl) <- pop_cinna
-
-library(RColorBrewer)
-library(pals)
-
-myCol <- alphabet(n = 17) %>% setNames(popNames(vcf.gl))
-
-msn <- poppr.msn(vcf.gl , distmat = bitwise.dist(vcf.gl ), palette = myCol, showplot = F)
-set.seed(999)
-plot_poppr_msn(vcf.gl , msn, inds = "na")
-
-
-```
-
-## DAPC
-
-```{r, eval = F, fig.align="center", fig.width=12, fig.height=12}
-
-library(poppr)
-
-vcf.gl <- vcfR2genlight(vcf_cinna)
-pop(vcf.gl) <- pop_cinna
-
-
-mydapc <- dapc(vcf.gl, pop = pop(vcf.gl), parallel = F,  n.pca = 50, n.da = 5)
-
-scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
-        posi.pca = "topright", posi.leg = "topleft", legend = F, 
-        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
-
-
-```
-
-## RAXML
-
-Preparing input file for RAXML
-
-```{r, eval = F, echo=T}
-
-all.vcf <- vcf_cinna_sojae
-
-gt.filtered <- extract.gt(all.vcf, element = "GT")
-gt.filtered[gt.filtered == "0/0"] <- 0
-gt.filtered[gt.filtered == "0/1"] <- 1
-gt.filtered[gt.filtered == "1/0"] <- 1
-gt.filtered[gt.filtered == "1/1"] <- 2
-gt.filtered[gt.filtered == "./."] <- "?"
-gt.filtered[is.na(gt.filtered)] <- "?"
-
-gt.df <- apply(gt.filtered, 2, function (x) paste(x, collapse = ""))
-gt.df <- gsub(pattern = "/", "", gt.df, fixed = T)
-
-#write.table(gt.df, file = "205isolates.phy", quote = F)
-
-```
-
-## RAXML tree
-
-```{r, eval=FALSE, fig.align="center", fig.height=12, fig.width=12, include=FALSE}
-
-library(ape)
-
-tree1 <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
-
-id <- unlist(strsplit(tree1$tip.label, split = ".fq"))
-pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
-pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
-pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
-
-pcinna_pop <- pcinna_pop[-nrow(pcinna_pop),]
-
-pop <- as.character(pcinna_pop$Country)
-pop[205] <- "Psojae"
-
-pop <- as.factor(pop)
-
-library(ggtree)
-countryInfo <- split(tree1$tip.label, pop)
-tree2 <- groupOTU(tree1, countryInfo)
-
-tree2$tip.label <- as.character(pop)
-
-
-#tiff("./MANUSCRIPT_FIGS/RAXML_tree.tiff", width = 7, height = 7, units = "in", res = 600)
-
-ggtree(tree2, aes(color=group, label = node), layout="circular", ladderize = TRUE) + 
-  geom_tiplab(size=3, aes(angle=angle)) 
-
-
-#dev.off()
-
-```
-
-
-```{r, fig.align="center", fig.height=20, fig.width=12}
-
-ggtree(tree2, aes(color=group, label = node), ladderize = TRUE) +  geom_tiplab(size=3)
-
-
-```
-
-
-## Reconstructing ancestral states
-
-```{r, eval = F}
-
-library(ape)
-mytree <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
-mytree <- drop.tip(mytree, "Psojae")
-
-id <- unlist(strsplit(mytree$tip.label, split = ".fq"))
-pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
-pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
-pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
-pop_cinna <- pcinna_pop$Country
-
-tips <- unlist(strsplit(mytree$tip.label, split = ".fq"))
-tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
-
-len <- length(which(duplicated(tips)))
-tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
-
-mytree$tip.label <- tips
-
-ids <- as.data.frame(mytree$tip.label)
-
-ids[2] <- pop_cinna
-rownames(ids) <- ids$`mytree$tip.label`
-ids <- ids[2]
-ids <- as.matrix(ids)[, 1]
-
-tree <- mytree
-x <- ids
-
-library(pals)
-library(phytools)
-
-
-#tiff("./MANUSCRIPT_FIGS/RAXML_tree.tiff", width = 10, height = 7, units = "in", res = 600)
-
-plot(ladderize(tree), type = "fan", show.tip.label = FALSE)
-mycol <- alphabet(n=17)
-cols <- setNames(mycol[1:length(unique(x))],sort(unique(x)))
-tiplabels(pie=to.matrix(x,sort(unique(x))), piecol = mycol,cex=0.25)
-add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
-
-#dev.off()
-
-
-## Fitting ER model
-
-fitER <- ace(x,tree,type="discrete", method = "ML", model = "ER", marginal = FALSE)
-fitER
-
-#tiff("./MANUSCRIPT_FIGS/Ancestral_reconstruction_RAXML.tiff", width = 10, height = 8, units = "in", res = 600)
-
-plot.phylo(ladderize(tree), type = "fan", show.tip.label = F)
-mycol <- alphabet(n=17)
-
-nodelabels(node=1:tree$Nnode+Ntip(tree),
-           pie=fitER$lik.anc,piecol=mycol,cex=0.3)
-
-#tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
-
-add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
-
-
-# dev.off()
-
-rspp <- as.data.frame(fitER$lik.anc[1, ])
-colnames(rspp) <- "RSPP"
-rspp <- cbind(pop = rownames(rspp), rspp)
-rownames(rspp) <- NULL
-
-library(ggplot2)
-
-#tiff("./MANUSCRIPT_FIGS/RSPP.tiff", width = 7, height = 7, units = "in", res = 600)
-
-ggplot(data = rspp) + aes(x = pop, y = RSPP, fill = pop) + geom_bar(stat = "identity") + 
-  theme(legend.position="none") +
-  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
-  theme(axis.text.y = element_text(size = 10, face = "bold")) +
-  labs(x = "Population", y = "Root state posterior probablity") +
-  theme(axis.title = element_text(size = 15, face = "bold")) +
-  theme(axis.text.y = element_text(size = 10, face = "bold")) 
-
-#dev.off()
-
-
-
-## RSPP at different nodes
-
-plot.phylo(ladderize(tree), type = "fan", show.tip.label = F)
-mycol <- alphabet(n=17)
-tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
-nodelabels(1:203, adj = 1, frame = "n", cex = 1)
-#nodelabels(node=1:tree$Nnode+Ntip(tree), pie=fitER$lik.anc,piecol=mycol,cex=0.3)
-
-rspp <- as.data.frame(fitER$lik.anc[39, ])
-colnames(rspp) <- "RSPP"
-rspp <- cbind(pop = rownames(rspp), rspp)
-rownames(rspp) <- NULL
-ggplot(data = rspp) + aes(x = pop, y = RSPP, fill = pop) + geom_bar(stat = "identity") + 
-  theme(legend.position="none") +
-  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
-  theme(axis.text.y = element_text(size = 10, face = "bold")) +
-  labs(x = "Population", y = "Root state posterior probablity") +
-  theme(axis.title = element_text(size = 15, face = "bold")) +
-  theme(axis.text.y = element_text(size = 10, face = "bold")) 
-
-
-
-```
-
-
-## ADMIXTURE analysis
-
-Preparing vcf file for admixture analysis
-
-```{r, eval = F}
-
-vcf
-pop_cinna
-in_pop <- c("Portugal", "Taiwan", "Australia", "South Africa", "USA", "Vietnam", "Chile", "Italy", "Dominican Republic")
-
-library(mypackage)
-
-#sublist_vcfbypop(vcf, pop_cinna)
-
-vcf_9pop <- vcf_popsub(vcf = vcf, pop = pop_cinna, in_pop = in_pop)
-
-#write.vcf(vcf_9pop, "vcf_9pop.gz")
-
-
-```
-
-
-### Plotting cross validation error
-
-```{r Cross validaion error, echo=TRUE, fig.align="center", fig.width=12, fig.height=12}
-
-library(ggplot2)
-cv <- read.table(file.path("./MIN_5SAMPLES_9POP/CV_error.txt")) 
-cv <- cv[,c(3:4)]
-colnames(cv) <- c("K", "Cross_Validation_Error")
-cv <- cv[order(readr::parse_number(cv$K)), ]
-cv$K <- factor(cv$K, levels = cv$K)
-
-ggplot(data = cv, aes(K, Cross_Validation_Error)) + geom_point(size  = 5) +
-  theme(axis.text.x = element_text(size = 15)) +
-  theme(axis.text.y = element_text(size = 15))
-
-```
-
-
-## This is very similar to STRUCTURE plot.
-
-```{r, admixture, echo=TRUE, fig.align="center", fig.width=18, fig.height=12}
-
-library(reshape2)
-qmat_files <- list.files("./MIN_5SAMPLES_9POP/qmatrices/")
-
-source("admix_plot.R")
-
-plot_list <- vector("list", length(qmat_files))
-
-x <- read.vcfR("vcf_9pop.gz")
-
-id <- unlist(strsplit(colnames(x@gt)[-1], split = ".fq"))
-pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
-pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
-pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
-
-pop <- pcinna_pop$Country
-
-for (k in 1:length(qmat_files)) {
-    qmat <- read.table(file.path("./MIN_5SAMPLES_9POP/qmatrices/", qmat_files[k]))
-    colnames(qmat) <- paste("Group", seq(1:ncol(qmat)), sep = ".")
-
-    qmat <- cbind(pop, qmat)
-    i <- sapply(qmat, is.factor)
-    qmat[i] <- lapply(qmat[i], as.character)
-
-    
-    key <-  c("Australia" = "AUS", "Chile"= "CHL", "Dominican Republic" ="DOMREP",
-              "Italy"= "ITL", "Portugal"= "PORT",
-              "South Africa"= "SA","USA"= "USA",
-              "Taiwan"= "TWN","Vietnam"= "VNM")
-    
-    qmat$pop <- factor(key[qmat$pop], ordered = TRUE, levels = key)
-    
-    qmat$pop <- factor(key[qmat$pop], levels = unique(qmat$pop)[c(2, 6, 3,  9, 1, 7, 5, 4, 8)], ordered = T)
-     
-    temp_plot <- admix_plot(qmat, horiz = F)
-    temp_plot <- temp_plot + theme(axis.text.x = element_text(angle = 0, size = 15)) #+ theme_classic() 
-
-    plot_list[[k]] <- temp_plot
-    
-} 
-
-qmat_files    
-
-library(cowplot)
-
-# tiff("./MANUSCRIPT_FIGS/ADMIXTURE.tiff", width = 15, height = 12, units = "in", res = 1200)
-plot_grid(plotlist = plot_list[14:16], nrow = 3, ncol = 1)  
-# dev.off()
-
-
-
-```
 
 ## Index of association for Taiwan, Vietnam and Australian population
 
-
-```{r, echo=FALSE, fig.align="center", fig.height=12, fig.width=18}
+```{r, echo=FALSE, fig.align="center", fig.height=12, fig.width=18, include=FALSE}
 
 vcf.gl <- vcfR2genlight(vcf_cinna)
 pop(vcf.gl) <- pop_cinna
@@ -697,23 +289,16 @@ t <- seppop(vcf.gl)
 t1 <- clonecorrect(as.snpclone(t$Taiwan))
 
 set.seed(100)
-sex <- glSim(n.ind = nInd(t1), n.snp.nonstruc = ceiling(0.9*nLoc(t1)), n.snp.struc = floor(0.1*nLoc(t1)), ploidy=2, LD=TRUE)
-### Structure (clonal pops)
+
 clone <- glSim(nInd(t1), n.snp.nonstruc = floor(0.1*nLoc(t1)), n.snp.struc=ceiling(0.9*nLoc(t1)), ploidy=2, LD = T)
-### Semi-clonal 
+most_clone <- glSim(nInd(t1), n.snp.nonstruc = ceiling(nLoc(t1)/3), n.snp.struc= 2*nLoc(t1)/3, ploidy=2, LD=T)
 semi_clone <- glSim(nInd(t1),n.snp.nonstruc = 0.5*nLoc(t1), n.snp.struc= 0.5*nLoc(t1), ploidy=2, LD=T)
-### Most-clonal 
-most_clone <- glSim(nInd(t1), n.snp.nonstruc = ceiling(nLoc(t1)/3), n.snp.struc=2*nLoc(t1)/3, ploidy=2, LD=T)
+sex <- glSim(n.ind = nInd(t1), n.snp.nonstruc = ceiling(0.9*nLoc(t1)), n.snp.struc = floor(0.1*nLoc(t1)), ploidy=2, LD=TRUE)
 
-## IA sex
-ia.sex <- samp.ia(sex,quiet = T, reps = 100, n.snp = 100)
-## IA clone
 ia.clone <- samp.ia(clone, quiet = T, reps = 100, n.snp = 100)
-## IA.semiclone
-ia.semi <- samp.ia(semi_clone, quiet = T,reps = 100, n.snp = 100)
-## IA.mostclone
 ia.most <- samp.ia(most_clone, quiet = T, reps = 100, n.snp = 100)
-
+ia.semi <- samp.ia(semi_clone, quiet = T,reps = 100, n.snp = 100)
+ia.sex <- samp.ia(sex,quiet = T, reps = 100, n.snp = 100)
 ia.cinna <- samp.ia(t1,  reps = 100, quiet = T, n.snp = 100)
 
 # Summarizing data frames
@@ -741,18 +326,16 @@ for (i in 1:length(frames)){
 anova.ia <- aov(lm(ia ~ dset, ia.total))
 library(agricolae)
 tukey <- HSD.test(anova.ia, "dset", alpha = 0.001)
+
 #tukey
 # Kluskal wallis test
 #kruskal.test(ia ~ dset, ia.total), trt="dset")
 k.test <- with(ia.total, kruskal(ia, dset, group = T, p.adj = "bon"))
 
-# Plot
 #theme_set(theme_gray())
 
 tai_IA <- ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Dataset") + ylab("Index of association") + ggtitle("Taiwan") + theme(plot.title = element_text(size = 16, face = "bold")) + theme(axis.text=element_text(size=12, face = "bold"), axis.title=element_text(size=14,face="bold")) + theme(legend.position  = "none")
   
-
-
 
 ## Vietnam
 
@@ -814,7 +397,7 @@ tukey <- HSD.test(anova.ia, "dset", alpha = 0.001)
 k.test <- with(ia.total, kruskal(ia, dset, group = T, p.adj = "bon"))
 
 # Plot
- theme_set(theme_gray())
+theme_set(theme_gray())
 vietnam_IA <- ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Dataset") + ylab("Index of association") + ggtitle("Vietnam") + theme(plot.title = element_text(size = 16, face = "bold")) + theme(axis.text=element_text(size=12, face = "bold"), axis.title=element_text(size=14,face="bold")) + theme(legend.position  = "none")
   
 
@@ -885,29 +468,505 @@ aus_IA <- ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Datas
           ggtitle("Australia") + theme(plot.title = element_text(size = 16, face = "bold")) + theme(axis.text=element_text(size=12, face = "bold"), axis.title=element_text(size=14,face="bold")) + theme(legend.position  = "none")
   
 
-tiff("./MANUSCRIPT_FIGS/Index of association.tiff", width = 15, height = 10, units = "in", res = 600)
+#tiff("./MANUSCRIPT_FIGS/Index of association.tiff", width = 15, height = 10, units = "in", res = 600)
 plot_grid(tai_IA, vietnam_IA, aus_IA, nrow = 2, ncol = 2)
-dev.off()
+#dev.off()
 
 ```
 
 
+## Mating type ratio expectation of 1:1
 
-## Extraction of clades
+### Binomial test for 1:1 A1/A2 ratio expectation.
 
-# Clade 1
+### Taiwan
 
 ```{r}
+vcf <- read.vcfR("Min10x_cov_205isolates_895Variants.gz")
+id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+library(dplyr,  verbose = F,quietly = T)
+Taiwan <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN")
+Taiwan_A1 <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN" & pcinna_pop$MT == "A1")
+#Taiwan_A2 <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN" & pcinna_pop$MT == "A2")
+Taiwan_A2 <- Taiwan[setdiff(rownames(Taiwan), rownames(Taiwan_A1)), ] 
+binom.test(c(nrow(Taiwan_A1), nrow(Taiwan_A2)), p = 0.5)
+```
+
+### Vietnam
+```{r}
+
+Vietnam <- subset(pcinna_pop, pcinna_pop$Country_code == "VNM")
+Vietnam_A1 <- subset(pcinna_pop, pcinna_pop$Country_code == "VNM" & pcinna_pop$MT == "A1")
+Vietnam_A2 <- Vietnam[setdiff(rownames(Vietnam), rownames(Vietnam_A1)), ] 
+binom.test(c(nrow(Vietnam_A1), nrow(Vietnam_A2)), p = 0.5)
+```
+
+### Australia
+
+```{r}
+Aus <- subset(pcinna_pop, pcinna_pop$Country_code == "AUS")
+Aus_A1 <- subset(pcinna_pop, pcinna_pop$Country_code == "AUS" & pcinna_pop$MT == "A1")
+nrow(Aus_A1)
+Aus_A2 <- subset(pcinna_pop, pcinna_pop$Country_code == "AUS" & pcinna_pop$MT == "A2")
+nrow(Aus_A2)
+binom.test(c(nrow(Aus_A1), nrow(Aus_A2)), p = 0.5)
+```
+
+### South Africa
+```{r}
+
+RSA <- subset(pcinna_pop, pcinna_pop$Country_code == "RSA")
+RSA_A1 <- subset(pcinna_pop, pcinna_pop$Country_code == "RSA" & pcinna_pop$MT == "A1")
+nrow(RSA_A1)
+RSA_A2 <- subset(pcinna_pop, pcinna_pop$Country_code == "RSA" & pcinna_pop$MT == "A2")
+nrow(RSA_A2)
+binom.test(c(nrow(RSA_A1), nrow(RSA_A2)), p = 0.5)
+
+```
+
+## Multilocus genotype and shared MLGs
+
+```{r, eval = F, echo=TRUE, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+vcf.genind <- vcfR2genind(vcf_cinna)
+pop(vcf.genind) <- pop_cinna
+
+tab <- mlg.table(vcf.genind)
+mlg.crosspop(vcf.genind)
+
+
+```
+
+## Neighbor joining tree
+
+```{r, eval=FALSE, fig.align="center", fig.height=12, fig.width=12, include=FALSE}
+library(ggtree)
+library(ggrepel)
+library(poppr)
+library(dplyr)
+library(adegenet)
+library(ape)
+
+vcf.gl <- vcfR2genlight(vcf_cinna)
+
+tree_nj <- aboot(vcf.gl, tree = "nj", distance = bitwise.dist, sample = 100, showtree = F, cutoff = 50)
+
+library(phangorn, quietly = TRUE)
+tree_nj <- midpoint(tree_nj)
+
+countryInfo <- split(tree_nj$tip.label, pop_cinna)
+tree2 <- groupOTU(tree_nj, countryInfo)
+
+tree2$tip.label <- paste(pcinna_pop$Country_code, pcinna_pop$MT, sep = "_")
+ 
+ggtree(tree2, aes(color=group, label = node), layout="circular", ladderize = TRUE) +
+  geom_tiplab(size=3, aes(angle=angle))
+
+
+ind_names <- tree_nj$tip.label
+tips <- unlist(strsplit(ind_names, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+ids <- as.data.frame(tips)
+ids[2] <- pop_cinna
+rownames(ids) <- ind_names
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+
+x.dict <- ids
+
+library(pals)
+library(phytools)
+
+#tiff("./MANUSCRIPT_FIGS/NJ.tiff", width = 10, height = 7, units = "in", res = 600)
+plot(ladderize(tree_nj), type = "fan", show.tip.label = F)
+
+mycol <- alphabet(n=17)
+cols <- setNames(mycol[1:length(unique(x.dict))],sort(unique(x.dict)))
+tiplabels(pie=to.matrix(x.dict,sort(unique(x.dict))), piecol = mycol,cex=0.25)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+
+#dev.off()
+
+# ggtree(tree2, aes(color=group)) +
+#   geom_tiplab(size=3) +
+#   geom_text2(aes(subset=!isTip, label=node), hjust=-0.3) + geom_treescale()
+
+
+
+## With PSojae
+
+# vcf.gl_sojae <- vcfR2genlight(vcf_cinna_sojae)
+# 
+# tree_nj_sojae <- aboot(vcf.gl_sojae, tree = "nj", distance = bitwise.dist, sample = 1000, showtree = F, cutoff = 50)
+# 
+# library(phangorn, quietly = TRUE)
+# 
+# tree_nj_sojae <- ape::root(tree_nj_sojae, outgroup = "Psojae")
+# 
+# 
+# countryInfo <- split(tree_nj_sojae$tip.label, pop_cinna_sojae)
+# tree2_sojae <- groupOTU(tree_nj_sojae, countryInfo)
+# 
+# 
+# tree2_sojae$tip.label <- paste(pcinna_pop$Country_code, pcinna_pop$MT, sep = "_")
+# tree2_sojae$tip.label[205] <- "Psojae"
+# 
+# ggtree(tree2_sojae, aes(color=group, label = node), layout="circular", ladderize = TRUE) +
+#   geom_tiplab(size=3, aes(angle=angle))
+
+# ggtree(tree2_sojae, aes(color=group, label = node), ladderize = TRUE) +
+#   geom_tiplab(size=3)
+
+```
+
+## RAXML
+
+# Preparing input file for RAXML
+
+```{r, eval = F, echo=T, include=FALSE}
+
+all.vcf <- vcf_cinna_sojae
+
+gt.filtered <- extract.gt(all.vcf, element = "GT")
+gt.filtered[gt.filtered == "0/0"] <- 0
+gt.filtered[gt.filtered == "0/1"] <- 1
+gt.filtered[gt.filtered == "1/0"] <- 1
+gt.filtered[gt.filtered == "1/1"] <- 2
+gt.filtered[gt.filtered == "./."] <- "?"
+gt.filtered[is.na(gt.filtered)] <- "?"
+
+gt.df <- apply(gt.filtered, 2, function (x) paste(x, collapse = ""))
+gt.df <- gsub(pattern = "/", "", gt.df, fixed = T)
+
+#write.table(gt.df, file = "205isolates.phy", quote = F)
+
+```
+
+## RAXML tree
+
+```{r, eval=FALSE, fig.align="center", fig.height=12, fig.width=12, include=FALSE}
+
+library(ape)
+
+tree1 <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
+
+id <- unlist(strsplit(tree1$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pcinna_pop <- pcinna_pop[-nrow(pcinna_pop),]
+
+pop <- as.character(pcinna_pop$Country)
+pop[205] <- "Psojae"
+
+pop <- as.factor(pop)
+
+library(ggtree)
+countryInfo <- split(tree1$tip.label, pop)
+tree2 <- groupOTU(tree1, countryInfo)
+
+tree2$tip.label <- as.character(pop)
+
+
+#tiff("./MANUSCRIPT_FIGS/RAXML_tree.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggtree(tree2, aes(color=group, label = node), layout="circular", ladderize = TRUE) + 
+  geom_tiplab(size=3, aes(angle=angle)) 
+
+
+#dev.off()
+
+```
+
+
+```{r, eval = F, fig.align="center", fig.height=20, fig.width=12, include=FALSE}
+
+ggtree(tree2, aes(color=group, label = node), ladderize = TRUE) +  geom_tiplab(size=3)
+
+
+```
+
+
+## Minimum spanning network
+
+```{r, eval=F, include=FALSE}
+
+vcf.gl <- vcfR2genlight(vcf_cinna)
+#pop(vcf.gl) <- pop[-length(pop)]
+pop(vcf.gl) <- pop_cinna
+
+library(RColorBrewer)
+library(pals)
+
+myCol <- alphabet(n = 17) %>% setNames(popNames(vcf.gl))
+
+msn <- poppr.msn(vcf.gl , distmat = bitwise.dist(vcf.gl ), palette = myCol, showplot = F)
+set.seed(999)
+plot_poppr_msn(vcf.gl , msn, inds = "na")
+
+
+```
+
+## DAPC
+
+```{r, eval = F, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+library(poppr)
+
+vcf.gl <- vcfR2genlight(vcf_cinna)
+pop(vcf.gl) <- pop_cinna
+
+
+mydapc <- dapc(vcf.gl, pop = pop(vcf.gl), parallel = F,  n.pca = 50, n.da = 5)
+
+scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+
+
+```
+
+
+## Reconstructing ancestral states
+
+# Maximum likelihood tree
+
+```{r, eval = T, fig.height=12, fig.width=12}
 
 library(ape)
 mytree <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
 mytree <- drop.tip(mytree, "Psojae")
 
-plot.phylo(ladderize(mytree), type = "fan", show.tip.label = F)
-plot.phylo(ladderize(mytree), show.tip.label = F)
-nodelabels(adj = 1, frame = "n", cex = 1)
+id <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+pop_cinna <- pcinna_pop$Country
 
-clade1 <- extract.clade(mytree, 318) 
+tips <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+
+mytree$tip.label <- tips
+
+ids <- as.data.frame(mytree$tip.label)
+
+ids[2] <- pop_cinna
+rownames(ids) <- ids$`mytree$tip.label`
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+
+tree <- mytree
+x <- ids
+
+library(pals)
+library(phytools, quietly = T, verbose = F)
+
+#tiff("./MANUSCRIPT_FIGS/RAXML_tree.tiff", width = 10, height = 7, units = "in", res = 600)
+
+plot(ladderize(tree), type = "fan", show.tip.label = FALSE)
+mycol <- alphabet(n=17)
+cols <- setNames(mycol[1:length(unique(x))],sort(unique(x)))
+tiplabels(pie=to.matrix(x,sort(unique(x))), piecol = mycol,cex=0.25)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+
+#dev.off()
+```
+
+
+## Ancestral character estimation using ape and phytools.
+
+Package ape has an function called ace(ancestral character estimation). This function can be used to map traits (either discrete or continous) on a tree. Here, I have made an attempt to map "geographic location" as discrete trait on a RAXML tree previously obtained. We use maximum likelihood method and Equal rate (ER) model to infer the probablity of root node. 
+
+Other rate models are also available in ape e.g. ARD model or SYM model. ARD stands for all-rates-different model and SYM is for symmetrical model.
+
+```{r, eval = T, fig.height=12, fig.width=12}
+
+fitER <- ace(x, tree, type="discrete", method = "ML", model = "ER", marginal = FALSE)
+fitER
+#tiff("./MANUSCRIPT_FIGS/Ancestral_reconstruction_RAXML.tiff", width = 10, height = 8, units = "in", res = 600)
+plot.phylo(ladderize(tree), type = "fan", show.tip.label = F)
+mycol <- alphabet(n=17)
+nodelabels(node=1:tree$Nnode+Ntip(tree),
+           pie=fitER$lik.anc,piecol=mycol,cex=0.3)
+#tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+# dev.off()
+
+head(fitER$lik.anc)
+```
+
+# Plotting root state probabality at ancestral node
+
+```{r}
+rspp <- as.data.frame(fitER$lik.anc[1, ])
+colnames(rspp) <- "RSPP"
+rspp <- cbind(pop = rownames(rspp), rspp)
+rownames(rspp) <- NULL
+
+library(ggplot2)
+
+#tiff("./MANUSCRIPT_FIGS/RSPP.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = rspp) + aes(x = pop, y = RSPP, fill = pop) + geom_bar(stat = "identity") + 
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Root state posterior probablity") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) 
+
+#dev.off()
+
+
+## RSPP at different nodes
+
+# plot.phylo(ladderize(tree), show.tip.label = F)
+# mycol <- alphabet(n=17)
+# tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
+# nodelabels(1:203, adj = 1, frame = "n", cex = 1)
+# nodelabels(adj = 1, frame = "n", cex = 1)
+# nodelabels(node=1:tree$Nnode+Ntip(tree), pie=fitER$lik.anc,piecol=mycol,cex=0.3)
+# 
+# rspp <- as.data.frame(fitER$lik.anc[46, ]) ## 114, 44
+# colnames(rspp) <- "RSPP"
+# rspp <- cbind(pop = rownames(rspp), rspp)
+# rownames(rspp) <- NULL
+ggplot(data = rspp) + aes(x = pop, y = RSPP, fill = pop) + geom_bar(stat = "identity") +
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Root state posterior probablity") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold"))
+
+```
+
+
+## ADMIXTURE analysis
+
+# Preparing vcf file for admixture analysis
+
+```{r, eval = F, include=FALSE}
+
+vcf
+pop_cinna
+in_pop <- c("Portugal", "Taiwan", "Australia", "South Africa", "USA", "Vietnam", "Chile", "Italy", "Dominican Republic")
+
+library(mypackage)
+
+#sublist_vcfbypop(vcf, pop_cinna)
+
+vcf_9pop <- vcf_popsub(vcf = vcf, pop = pop_cinna, in_pop = in_pop)
+
+#write.vcf(vcf_9pop, "vcf_9pop.gz")
+
+
+```
+
+
+### Plotting cross validation error
+
+```{r Cross validaion error, eval = F, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+library(ggplot2)
+cv <- read.table(file.path("./MIN_5SAMPLES_9POP/CV_error.txt")) 
+cv <- cv[,c(3:4)]
+colnames(cv) <- c("K", "Cross_Validation_Error")
+cv <- cv[order(readr::parse_number(cv$K)), ]
+cv$K <- factor(cv$K, levels = cv$K)
+
+ggplot(data = cv, aes(K, Cross_Validation_Error)) + geom_point(size  = 5) +
+  theme(axis.text.x = element_text(size = 15)) +
+  theme(axis.text.y = element_text(size = 15))
+
+```
+
+
+## This is very similar to STRUCTURE plot.
+
+```{r, eval = F, admixture, echo=TRUE, fig.align="center", fig.width=18, fig.height=12, include=FALSE}
+
+library(reshape2)
+qmat_files <- list.files("./MIN_5SAMPLES_9POP/qmatrices/")
+
+source("admix_plot.R")
+
+plot_list <- vector("list", length(qmat_files))
+
+x <- read.vcfR("vcf_9pop.gz")
+
+id <- unlist(strsplit(colnames(x@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pop <- pcinna_pop$Country
+
+for (k in 1:length(qmat_files)) {
+    qmat <- read.table(file.path("./MIN_5SAMPLES_9POP/qmatrices/", qmat_files[k]))
+    colnames(qmat) <- paste("Group", seq(1:ncol(qmat)), sep = ".")
+
+    qmat <- cbind(pop, qmat)
+    i <- sapply(qmat, is.factor)
+    qmat[i] <- lapply(qmat[i], as.character)
+
+    
+    key <-  c("Australia" = "AUS", "Chile"= "CHL", "Dominican Republic" ="DOMREP",
+              "Italy"= "ITL", "Portugal"= "PORT",
+              "South Africa"= "SA","USA"= "USA",
+              "Taiwan"= "TWN","Vietnam"= "VNM")
+    
+    qmat$pop <- factor(key[qmat$pop], ordered = TRUE, levels = key)
+    
+    qmat$pop <- factor(key[qmat$pop], levels = unique(qmat$pop)[c(2, 6, 3,  9, 1, 7, 5, 4, 8)], ordered = T)
+     
+    temp_plot <- admix_plot(qmat, horiz = F)
+    temp_plot <- temp_plot + theme(axis.text.x = element_text(angle = 0, size = 15)) #+ theme_classic() 
+
+    plot_list[[k]] <- temp_plot
+    
+} 
+
+qmat_files    
+
+library(cowplot)
+
+# tiff("./MANUSCRIPT_FIGS/ADMIXTURE.tiff", width = 15, height = 12, units = "in", res = 1200)
+plot_grid(plotlist = plot_list[14:16], nrow = 3, ncol = 1)  
+# dev.off()
+
+
+
+```
+
+
+
+## Extraction of clades and index of association by clades
+
+# Clade 1
+
+```{r, eval = F, include=FALSE}
+
+library(ape)
+mytree <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
+mytree <- drop.tip(mytree, "Psojae")
+
+
+#tiff("./MANUSCRIPT_FIGS/cladenodes.tiff", width = 12, height = 12, units = "in", res = 600)
+plot.phylo(ladderize(mytree), show.tip.label = F)
+#nodelabels(adj = 1, frame = "n", cex = 1)
+
+clade1 <- extract.clade(mytree, 332) 
 clade1_samples <- which(colnames(vcf@gt)[-1] %in% clade1$tip.label) + 1 
 clade1_vcf <- vcf[, c(1, clade1_samples)]
 
@@ -973,7 +1032,7 @@ clade1_ia <- ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Da
 
 # Clade 2
 
-```{r}
+```{r, eval = F, include=FALSE}
 clade2 <- extract.clade(mytree, 243) 
 clade2_samples <- which(colnames(vcf@gt)[-1] %in% clade2$tip.label) + 1 
 clade2_vcf <- vcf[, c(1, clade2_samples)]
@@ -1036,11 +1095,51 @@ clade2_ia <- ggplot(ia.total,aes(dset,ia,fill=dset)) + geom_boxplot() + xlab("Da
   
 
 # tiff("./MANUSCRIPT_FIGS/Index of association by clades.tiff", width = 15, height = 7, units = "in", res = 600)
-plot_grid(clade1_ia, clade2_ia, nrow = 1, ncol=2)
+cowplot::plot_grid(clade1_ia, clade2_ia, nrow = 1, ncol=2)
 # dev.off()
 
 ```
 
+
+```{r, eval = F, include=FALSE}
+
+clade1_vcf
+colnames(clade1_vcf@gt)
+
+id <- unlist(strsplit(colnames(clade1_vcf@gt)[-1], split = ".fq"))
+clade1_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+clade1_pop <- clade1_pop[clade1_pop$Isolate %in% id, ]
+clade1_pop <- clade1_pop[match(id, clade1_pop$Isolate), ]
+clade1_pop <- clade1_pop$Country
+table(clade1_pop)
+
+
+clade2_vcf
+colnames(clade2_vcf@gt)
+id <- unlist(strsplit(colnames(clade2_vcf@gt)[-1], split = ".fq"))
+clade2_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+clade2_pop <- clade2_pop[clade2_pop$Isolate %in% id, ]
+clade2_pop <- clade2_pop[match(id, clade2_pop$Isolate), ]
+clade2_pop <- clade2_pop$Country
+table(clade2_pop)
+
+
+combined_clade12 <- clade1_vcf
+combined_clade12@gt <- cbind(combined_clade12@gt, clade2_vcf@gt[, -1])
+
+combined_clade12_pop <- as.factor(c(rep("clade1", 82), rep("clade2", 76)))
+
+vcfR::genetic_diff(combined_clade12, combined_clade12_pop)
+
+
+
+p <- informloci(vcfR2genind(combined_clade12), MAF = 0)
+
+p$loc.fac
+
+
+
+```
 
 
 ## SNAPP  test
@@ -1099,6 +1198,8 @@ snapp.vcf@gt <- cbind(clade1_vcf_nsamples@gt,
                       clade3_Taiwan_vcf_nsamples@gt[, -1],
                       clade4_Vietnam_vcf_nsamples@gt[ , -1],
                       clade5_png_vcf@gt[, -1])
+
+
 
 #sum(duplicated(colnames(snapp.vcf@gt)))
 
