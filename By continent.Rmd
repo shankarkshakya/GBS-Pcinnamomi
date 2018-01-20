@@ -1,0 +1,383 @@
+---
+title: "Untitled"
+author: "Shankar K Shakya"
+date: "January 11, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+rm(list = ls())
+library(vcfR, quietly = T, verbose = F)
+library(poppr, quietly = T, verbose = F)
+library(ggplot2, quietly = T, verbose = F)
+library(reshape2, quietly = T, verbose = F)
+
+vcf <- read.vcfR("Min10x_cov_205isolates_888Variants.gz", verbose = F)
+
+id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pop_cinna <- pcinna_pop$Continent
+pop_cinna_sojae <- as.factor(c(as.character(pop_cinna), "Psojae"))
+
+vcf_cinna_sojae <- vcf
+colnames(vcf_cinna_sojae@gt)[length(colnames(vcf_cinna_sojae@gt))] <- "Psojae"
+
+vcf_cinna <- vcf[ , -ncol(vcf_cinna_sojae@gt)]
+
+
+```
+
+## Haplotype diversity and number of unique haplotypes
+
+```{r, fig.align="center", fig.height=12, fig.width=12}
+
+library(ape, verbose = F, quietly = T)
+library(pegas, verbose = F, quietly = T)
+library(forcats)
+
+gt_cinna <- extract.gt(vcf_cinna, element = "GT", return.alleles = TRUE)
+gt_cinna <- alleles2consensus(gt_cinna)
+gt_cinna <- t(gt_cinna)
+gt_cinna_dnabin <- as.DNAbin(gt_cinna)
+rownames(gt_cinna_dnabin) <- paste("Pop", pop_cinna, sep = "_")
+
+h <- haplotype(gt_cinna_dnabin)
+h <- sort(h, what = "label")
+h.freq <- haploFreq(gt_cinna_dnabin, haplo = h)
+rownames(h.freq) <- paste("Haplotype", 1:nrow(h.freq), sep = "_")
+colnames(h.freq)[c(3,5,7)] <- c("Australia", "North_America", "South_America")
+h.freq.df <- as.data.frame(h.freq)
+head(h.freq.df)
+h.freq.mat <- h.freq
+hap.percent <- as.data.frame(colSums(h.freq.df > 0) / nrow(h.freq.df))
+colnames(hap.percent) <- "Haplotype_diversity"
+
+
+hap.percent <- hap.percent[order(hap.percent$Haplotype_diversity, decreasing = T), 1, drop = F]
+
+hap.percent[2] <- brewer.pal(n = 7, name = "Accent")
+colnames(hap.percent)[2] <- "color"
+
+
+#tiff("./FIGS/Continent_Haplotypediversity.tiff", width = 7, height = 7, units = "in", res = 600)
+ggplot(data = hap.percent, aes(x = fct_inorder(rownames(hap.percent)), y = Haplotype_diversity)) +  geom_bar(stat = "identity", fill = hap.percent$color)+
+  theme(legend.position="none") +
+  theme(legend.text = element_text(size = 10)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Per cent observed CMLGs") +
+  theme(axis.title = element_text(size = 15, face = "bold")) 
+#dev.off()
+
+
+Haplotype_diversity <- t(hap.div(dnabin = as.DNAbin(gt_cinna), pop = pop_cinna))
+rownames(Haplotype_diversity)[c(3,5,7)] <- c("Australia", "North_America", "South_America")
+
+Haplotype_diversity <- as.data.frame(Haplotype_diversity)
+colnames(Haplotype_diversity) <- "HD"
+
+Haplotype_diversity <- Haplotype_diversity[order(Haplotype_diversity, decreasing = T), 1, drop = F]
+
+#tiff("./FIGS/Continent_Haplotypediversity.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = Haplotype_diversity,  aes(x = fct_inorder(rownames(Haplotype_diversity)), y = HD , fill = rownames(Haplotype_diversity))) + geom_bar(stat = "identity") +
+  theme(legend.position="none") +
+  theme(legend.text = element_text(size = 10)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Haplotype diversity") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) 
+
+#dev.off()
+
+## Rarefaction
+
+library(vegan)
+S <- specnumber(t(h.freq.df))  # observed number of MLGs
+raremax <- min(rowSums(t(h.freq.df)))
+Srare <- rarefy(t(h.freq.df), raremax)
+#plot(S, Srare, xlab = "Observed No. of MLGs", ylab = "Rarefied No. of MLGs")
+#abline(0, 1)
+
+h.freq.df.t <- t(h.freq.df)
+
+#tiff("./FIGS/rarefaction_curve.tiff", width = 7, height = 7, units = "in", res = 600)
+rarecurve(h.freq.df.t, step = 1, sample = raremax, cex = 1, lwd = 2, ylab = "CMLGs",  col = hap.percent$color[c(2,1,3,5,6,4,7)])
+
+#dev.off()
+
+
+```
+
+## Haplonet plots
+
+```{r, fig.height=12, fig.width=12}
+
+library(pals)
+nt <- haploNet(h)
+fq <- attr(nt, "freq")
+
+
+#tiff("./FIGS/Continent_Haplotype_diversity2.tiff", width = 7, height = 7, units = "in", res = 600)
+
+plot(x = nt, size =fq, labels = F, show.mutation = F, asp = 1.5, fast = T, pie = h.freq.mat, threshold = 0, scale.ratio = 0.5,
+     bg = hap.percent$color[c(2,1,3,5,6,4,7)])
+
+
+legend(-145, 55, rownames(hap.percent), fill = hap.percent$color, cex=1, horiz = FALSE, ncol = 1, box.col = "white", bg = "transparent", bty = "n")
+
+#dev.off()
+
+
+# legend(-145, 55, colnames(h.freq)[c(2,1,3,6,4,5,7)], fill=hap.percent$color, 
+#        cex=1, horiz = FALSE, ncol = 1, box.col = "white", bg = "transparent", bty = "n")
+# 
+
+
+
+
+```
+
+## Number of unique haplotypes
+
+```{r, fig.height=12, fig.width=12}
+
+
+uniq_haplotypes <- h.freq.df[rowSums(h.freq.df > 0) == 1 , ]
+uniq_haplotypes <- as.data.frame(colSums(uniq_haplotypes > 0))
+
+# Asia 12
+# Africa 1
+
+
+
+```
+
+
+## Table 2: All about Haplotypes
+
+```{r}
+
+absolute_haplo <- as.data.frame(colSums(h.freq.df > 0))   ##observed haplotypes
+#uniq_haplotypes ## uniq haplotypes
+#Haplotype_diversity ## diversity
+
+nsamples <-  as.data.frame(colSums(h.freq.df))
+
+Table2 <- cbind(nsamples, absolute_haplo, uniq_haplotypes, Haplotype_diversity)
+colnames(Table2) <- c("Number of isolates", "Observed Haplotypes", "Unique haplotypes", "Haplotype diversity")
+
+Table2
+
+#write.csv(Table2, "./MANUSCRIPT_TABLE/Table2.csv")
+
+```
+
+
+
+
+## ADMIXTURE analysis
+
+### Plotting cross validation error
+
+```{r Cross validaion error, eval = F, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+## vcf2plink is the first step.
+
+library(ggplot2)
+cv <- read.table(file.path("./By_continent/CV_error.txt")) 
+cv <- cv[,c(3:4)]
+colnames(cv) <- c("K", "Cross_Validation_Error")
+cv <- cv[order(readr::parse_number(cv$K)), ]
+cv$K <- factor(cv$K, levels = cv$K)
+
+ggplot(data = cv, aes(K, Cross_Validation_Error)) + geom_point(size  = 5) +
+  theme(axis.text.x = element_text(size = 15)) +
+  theme(axis.text.y = element_text(size = 15))
+
+```
+
+
+## This is very similar to STRUCTURE plot.
+
+```{r, eval = F, admixture, echo=TRUE, fig.align="center", fig.width=18, fig.height=12, include=FALSE}
+
+library(reshape2)
+qmat_files <- list.files("./By_continent/qmatrices/")
+source("admix_plot.R")
+plot_list <- vector("list", length(qmat_files))
+x <- read.vcfR("vcf_bycontinent_888var.gz")
+id <- unlist(strsplit(colnames(x@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pop <- pcinna_pop$Continent
+
+for (k in 1:length(qmat_files)) {
+    qmat <- read.table(file.path("./By_continent/qmatrices/", qmat_files[k]))
+    colnames(qmat) <- paste("Group", seq(1:ncol(qmat)), sep = ".")
+    qmat <- cbind(pop, qmat)
+    i <- sapply(qmat, is.factor)
+    qmat[i] <- lapply(qmat[i], as.character)
+    key <-  c("AUS" = "AUS", "Africa"= "AF", "Asia" ="Asia",
+              "Europe"= "EURO", "North_America"= "N_America",
+              "South_America"= "S_America","Oceania"= "OCN")
+
+    qmat$pop <- factor(key[qmat$pop], ordered = TRUE, levels = key)
+    qmat$pop <- factor(key[qmat$pop], levels = unique(qmat$pop)[c(2,4,3,6,1,5,7)], ordered = T)
+    temp_plot <- admix_plot(qmat, horiz = F)
+    temp_plot <- temp_plot + theme(axis.text.x = element_text(angle = 0, size = 12, face = "bold")) 
+    
+    plot_list[[k]] <- temp_plot
+    
+} 
+
+
+#library(cowplot)
+
+x <- plot_list[9:11]
+myplot_list <- lapply(x[1:2], function(x) x + theme(axis.text.x=element_blank()))
+myplot_list <- c(myplot_list, x[3])
+
+#lapply(myplot_list, )
+
+tiff("./FIGS/Bycontinent_ADMIXTURE.tiff", width = 18, height = 12, units = "in", res = 600)
+plot_grid(plotlist = myplot_list, nrow = 3, ncol = 1, hjust = 1)
+dev.off()
+
+```
+
+
+## DAPC
+
+```{r, eval = F, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+library(poppr)
+
+vcf.gl <- vcfR2genlight(vcf_cinna)
+pop(vcf.gl) <- pop_cinna
+
+mydapc <- dapc(vcf.gl, pop = pop(vcf.gl), parallel = F,  n.pca = 50, n.da = 5)
+
+#tiff("./FIGS/Bycontinent_dapc1.tiff", width = 12, height = 12, units = "in", res = 600)
+scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+dev.off()
+
+
+vcf_no_chile <- vcf_popsub(vcf = vcf_cinna, pop = pop_cinna, in_pop = c("Africa", "Asia", "AUS", "Europe", "North_America", "Oceania"))
+
+vcf_no_chile <- vcfR2genlight(vcf_no_chile)
+pop(vcf_no_chile) <- pop_cinna[which(pop_cinna != "South_America")]
+
+mydapc2 <- dapc(vcf_no_chile, pop = pop(vcf_no_chile), parallel = F,  n.pca = 50, n.da = 5)
+
+#tiff("./FIGS/Bycontinent_dapc2.tiff", width = 12, height = 12, units = "in", res = 600)
+scatter.dapc(mydapc2, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+
+dev.off()
+
+
+
+
+```
+
+
+## Mating type ratio expectation of 1:1
+
+### Binomial test for 1:1 A1/A2 ratio expectation.
+
+### Asia
+
+```{r}
+
+vcf <- read.vcfR("Min10x_cov_205isolates_888Variants.gz")
+id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+
+library(dplyr,  verbose = F,quietly = T)
+Asia <- subset(pcinna_pop, pcinna_pop$Continent == "Asia")
+
+Asia_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Asia" & pcinna_pop$MT == "A1")
+nrow(Asia_A1)
+
+#Taiwan_A2 <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN" & pcinna_pop$MT == "A2")
+Asia_A2 <- Asia[setdiff(rownames(Asia), rownames(Asia_A1)), ]
+nrow(Asia_A2)
+
+
+binom.test(c(nrow(Asia_A1), nrow(Asia_A2)), p = 0.5)
+
+
+
+```
+
+### Australia
+
+```{r}
+Aus <- subset(pcinna_pop, pcinna_pop$Continent == "AUS")
+Aus_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "AUS" & pcinna_pop$MT == "A1")
+nrow(Aus_A1)
+Aus_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "AUS" & pcinna_pop$MT == "A2")
+nrow(Aus_A2)
+binom.test(c(nrow(Aus_A1), nrow(Aus_A2)), p = 0.5)
+
+```
+
+
+### Africa
+```{r}
+
+RSA <- subset(pcinna_pop, pcinna_pop$Continent == "Africa")
+
+RSA_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Africa" & pcinna_pop$MT == "A1")
+nrow(RSA_A1)
+
+
+RSA_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "Africa" & pcinna_pop$MT == "A2")
+nrow(RSA_A2)
+
+binom.test(c(nrow(RSA_A1), nrow(RSA_A2)), p = 0.5)
+
+```
+
+
+### Europe
+```{r}
+
+euro<- subset(pcinna_pop, pcinna_pop$Continent == "Europe")
+euro_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Europe" & pcinna_pop$MT == "A1")
+nrow(euro_A1)
+
+
+euro_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "Europe" & pcinna_pop$MT == "A2")
+nrow(euro_A2)
+
+binom.test(c(nrow(euro_A1), nrow(euro_A2)), p = 0.5)
+
+
+```
+
+
+
+
+
+
+
+
