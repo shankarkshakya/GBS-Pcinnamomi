@@ -1,0 +1,587 @@
+---
+title: "multilocus lineages"
+author: "Shankar K Shakya"
+date: "January 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+
+rm(list = ls())
+library(vcfR, quietly = T, verbose = F)
+library(poppr, quietly = T, verbose = F)
+library(ggplot2, quietly = T, verbose = F)
+library(reshape2, quietly = T, verbose = F)
+library(poppr)
+
+vcf <- read.vcfR("Min10x_cov_205isolates_888Variants.gz", verbose = F)
+
+id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pop_cinna <- pcinna_pop$Continent
+pop_cinna_sojae <- as.factor(c(as.character(pop_cinna), "Psojae"))
+
+vcf_cinna_sojae <- vcf
+colnames(vcf_cinna_sojae@gt)[length(colnames(vcf_cinna_sojae@gt))] <- "Psojae"
+
+vcf_cinna <- vcf[ , -ncol(vcf_cinna_sojae@gt)]
+
+vcf_cinna <- vcf_cinna[is.polymorphic(vcf_cinna), ]
+
+
+```
+
+## MSN 1
+
+```{r, fig.align="center", fig.height=12, fig.width=12}
+
+
+vcf_cinna_gid <- vcfR2genind(vcf_cinna)
+pop(vcf_cinna_gid) <- pop_cinna
+
+library(RColorBrewer)
+
+mycol <- brewer.pal(n = 7, name = "Accent") %>% setNames(unique(pop_cinna))
+
+msn1 <- poppr.msn(vcf_cinna_gid , distmat = bitwise.dist(vcf_cinna_gid), palette = mycol, showplot = F)
+
+#tiff("./FIGS/Msn1.tiff", width = 10, height = 10, units = "in", res = 600)
+set.seed(999)
+plot_poppr_msn(vcf_cinna_gid , msn1, inds = "na")
+#dev.off()
+
+```
+
+## MSN 2
+
+```{r, fig.align="center", fig.height=12, fig.width=12}
+
+vcf_cinna_gl <- as.genclone(vcf_cinna_gid)
+
+#tiff("./FIGS/cutoff.tiff", width = 7, height = 7, units = "in", res = 600)
+thresh <- filter_stats(vcf_cinna_gl, distance = bitwise.dist, plot = TRUE)
+#dev.off()
+
+#cutoff_predictor(thresh$average$THRESHOLDS)
+
+mlg.filter(vcf_cinna_gl, algorithm = "average_neighbor", distance = "bitwise.dist") <- 0.10
+
+mlg.table(vcf_cinna_gl)
+
+msn2 <- poppr.msn(vcf_cinna_gl , distmat = bitwise.dist(vcf_cinna_gl), palette = mycol, showplot = F)
+
+#tiff("./FIGS/Msn2.tiff", width = 10, height = 10, units = "in", res = 600)
+set.seed(999)
+plot_poppr_msn(vcf_cinna_gl , msn2, inds = "FALSE")
+#dev.off()
+
+
+```
+
+
+
+## Percent observed multilocus genotypes
+
+```{r, fig.align="center", fig.height=12, fig.width=12}
+
+library(forcats)
+mlg.df <- mlg.table(vcf_cinna_gl, plot = F)
+
+#head(mlg.df)
+
+mlg.df.t <- t(mlg.df)
+
+mlg.percent <- as.data.frame(colSums(mlg.df.t > 0) / nrow(mlg.df.t))
+colnames(mlg.percent) <- "Haplotype_diversity"
+
+mlg.percent <- mlg.percent[order(mlg.percent$Haplotype_diversity, decreasing = T), 1, drop = F]
+
+#tiff("./FIGS/MLG.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = mlg.percent, aes(x = fct_inorder(rownames(mlg.percent)), y = Haplotype_diversity)) +  geom_bar(stat = "identity", fill = mycol[c(2,3,4,6,1,5,7)])+
+  theme(legend.position="none") +
+  theme(legend.text = element_text(size = 12)) +
+  theme(axis.text.x = element_text(size = 12, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 12, face = "bold")) +
+  labs(x = "Population", y = "Percent observed MLGs") +
+  theme(axis.title = element_text(size = 15, face = "bold")) 
+
+#dev.off()
+
+```
+
+
+## Rarefaction
+
+```{r, fig.align="center", fig.height=12, fig.width=12}
+
+mlg.df <- mlg.table(vcf_cinna_gl, plot = F)
+
+library(vegan)
+S <- specnumber(mlg.df)  # observed number of MLGs
+raremax <- min(rowSums(mlg.df))
+Srare <- rarefy(mlg.df, raremax)
+#plot(S, Srare, xlab = "Observed No. of MLGs", ylab = "Rarefied No. of MLGs")
+#abline(0, 1)
+
+
+#tiff("./FIGS/rarefaction_curve.tiff", width = 7, height = 7, units = "in", res = 600)
+rarecurve(mlg.df, step = 1, sample = raremax, cex = 1, lwd = 3, ylab = "Multi Locus Genotypes",  
+          col = mycol, cex.lab = 1.5 )
+
+#dev.off()
+
+
+```
+
+
+## Diversity statistics
+
+```{r}
+
+
+mlg.df.t
+
+# hap_mat <- matrix(NA, nrow = 1, ncol = ncol(mlg.df.t))
+# rownames(hap_mat) <- "Haplotype Diversity"
+# colnames(hap_mat) <- colnames(mlg.df.t)
+#     
+#     for (i in 1:ncol(mlg.df.t)) {
+#             temp_pop <- mlg.df.t[i]/colSums(mlg.df.t)[i]
+#             temp_pop <- temp_pop^2
+#             temp_pop_haplotypeddiv <- colSums(mlg.df.t[i]) * (1 - colSums(temp_pop))/(colSums(mlg.df.t[i]) - 1)
+#             hap_mat[1, i] <- temp_pop_haplotypeddiv
+#     }
+# 
+# 
+# 
+# vcf_cinna_gl
+
+
+## Simpson's index
+
+poppr(vcf_cinna_gl)
+
+vcf_cinna_gl.gtypes <- genind2gtypes(vcf_cinna_gl)
+
+alleleFreqs(vcf_cinna_gl.gtypes, TRUE)
+
+```
+
+## ADMIXTURE analysis
+
+### Plotting cross validation error
+
+```{r Cross validaion error, eval = F, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+## vcf2plink is the first step.
+
+library(ggplot2)
+cv <- read.table(file.path("./By_continent/CV_error.txt")) 
+cv <- cv[,c(3:4)]
+colnames(cv) <- c("K", "Cross_Validation_Error")
+cv <- cv[order(readr::parse_number(cv$K)), ]
+cv$K <- factor(cv$K, levels = cv$K)
+
+ggplot(data = cv, aes(K, Cross_Validation_Error)) + geom_point(size  = 5) +
+  theme(axis.text.x = element_text(size = 15)) +
+  theme(axis.text.y = element_text(size = 15))
+
+```
+
+
+## This is very similar to STRUCTURE plot.
+
+```{r, eval = F, admixture, echo=TRUE, fig.align="center", fig.width=18, fig.height=12, include=FALSE}
+
+library(reshape2)
+qmat_files <- list.files("./By_continent/qmatrices/")
+source("admix_plot.R")
+plot_list <- vector("list", length(qmat_files))
+x <- read.vcfR("vcf_bycontinent_888var.gz")
+id <- unlist(strsplit(colnames(x@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pop <- pcinna_pop$Continent
+
+for (k in 1:length(qmat_files)) {
+    qmat <- read.table(file.path("./By_continent/qmatrices/", qmat_files[k]))
+    colnames(qmat) <- paste("Group", seq(1:ncol(qmat)), sep = ".")
+    qmat <- cbind(pop, qmat)
+    i <- sapply(qmat, is.factor)
+    qmat[i] <- lapply(qmat[i], as.character)
+    key <-  c("AUS" = "AUS", "Africa"= "AF", "Asia" ="Asia",
+              "Europe"= "EURO", "North_America"= "N_America",
+              "South_America"= "S_America","Oceania"= "OCN")
+
+    qmat$pop <- factor(key[qmat$pop], ordered = TRUE, levels = key)
+    qmat$pop <- factor(key[qmat$pop], levels = unique(qmat$pop)[c(2,4,3,6,1,5,7)], ordered = T)
+    temp_plot <- admix_plot(qmat, horiz = F)
+    temp_plot <- temp_plot + theme(axis.text.x = element_text(angle = 0, size = 12, face = "bold")) 
+    
+    plot_list[[k]] <- temp_plot
+    
+} 
+
+
+library(cowplot)
+
+x <- plot_list[9:11]
+myplot_list <- lapply(x[1:2], function(x) x + theme(axis.text.x=element_blank()))
+myplot_list <- c(myplot_list, x[3])
+
+
+
+#tiff("./FIGS/Bycontinent_ADMIXTURE.tiff", width = 18, height = 12, units = "in", res = 600)
+plot_grid(plotlist = myplot_list, nrow = 3, ncol = 1, hjust = 1)
+#dev.off()
+
+```
+
+
+## DAPC
+
+```{r, eval = F, fig.align="center", fig.width=12, fig.height=12, include=FALSE}
+
+library(poppr)
+
+vcf.gl <- vcfR2genlight(vcf_cinna)
+pop(vcf.gl) <- pop_cinna
+
+mydapc <- dapc(vcf.gl, pop = pop(vcf.gl), parallel = F,  n.pca = 50, n.da = 5)
+
+#tiff("./FIGS/Bycontinent_dapc1.tiff", width = 12, height = 12, units = "in", res = 600)
+scatter.dapc(mydapc, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+#dev.off()
+
+
+vcf_no_chile <- vcf_popsub(vcf = vcf_cinna, pop = pop_cinna, in_pop = c("Africa", "Asia", "AUS", "Europe", "North_America", "Oceania"))
+
+vcf_no_chile <- vcfR2genlight(vcf_no_chile)
+pop(vcf_no_chile) <- pop_cinna[which(pop_cinna != "South_America")]
+
+mydapc2 <- dapc(vcf_no_chile, pop = pop(vcf_no_chile), parallel = F,  n.pca = 50, n.da = 5)
+
+#tiff("./FIGS/Bycontinent_dapc2.tiff", width = 12, height = 12, units = "in", res = 600)
+scatter.dapc(mydapc2, clabel = 0.75, pch=15:20, scree.pca = TRUE, scree.da = FALSE, 
+        posi.pca = "topright", posi.leg = "topleft", legend = F, 
+        cleg = 0.9, inset.solid = 1, xax = 2, yax = 1, cex.lab = 1, cex = 2, solid = 1, cstar = 0)
+
+#dev.off()
+
+
+```
+
+
+## Mating type ratio expectation of 1:1
+
+### Binomial test for 1:1 A1/A2 ratio expectation.
+
+### Asia
+
+```{r}
+
+# vcf <- read.vcfR("Min10x_cov_205isolates_888Variants.gz")
+# id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+# pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+# pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+# pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+
+library(dplyr,  verbose = F,quietly = T)
+Asia <- subset(pcinna_pop, pcinna_pop$Continent == "Asia")
+
+Asia_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Asia" & pcinna_pop$MT == "A1")
+nrow(Asia_A1)
+
+#Taiwan_A2 <- subset(pcinna_pop, pcinna_pop$Country_code == "TWN" & pcinna_pop$MT == "A2")
+Asia_A2 <- Asia[setdiff(rownames(Asia), rownames(Asia_A1)), ]
+nrow(Asia_A2)
+
+
+binom.test(c(nrow(Asia_A1), nrow(Asia_A2)), p = 0.5)
+
+
+
+```
+
+### Australia
+
+```{r}
+Aus <- subset(pcinna_pop, pcinna_pop$Continent == "AUS")
+Aus_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "AUS" & pcinna_pop$MT == "A1")
+nrow(Aus_A1)
+Aus_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "AUS" & pcinna_pop$MT == "A2")
+nrow(Aus_A2)
+binom.test(c(nrow(Aus_A1), nrow(Aus_A2)), p = 0.5)
+
+```
+
+
+### Africa
+```{r}
+
+RSA <- subset(pcinna_pop, pcinna_pop$Continent == "Africa")
+
+RSA_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Africa" & pcinna_pop$MT == "A1")
+nrow(RSA_A1)
+
+
+RSA_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "Africa" & pcinna_pop$MT == "A2")
+nrow(RSA_A2)
+
+binom.test(c(nrow(RSA_A1), nrow(RSA_A2)), p = 0.5)
+
+```
+
+
+### Europe
+```{r}
+
+euro <- subset(pcinna_pop, pcinna_pop$Continent == "Europe")
+euro_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Europe" & pcinna_pop$MT == "A1")
+nrow(euro_A1)
+
+
+euro_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "Europe" & pcinna_pop$MT == "A2")
+nrow(euro_A2)
+
+binom.test(c(nrow(euro_A1), nrow(euro_A2)), p = 0.5)
+
+
+```
+
+
+### North America
+
+```{r}
+
+N_america <- subset(pcinna_pop, pcinna_pop$Continent == "North_America")
+N_america_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "North_America" & pcinna_pop$MT == "A1")
+nrow(N_america_A1)
+
+
+N_america_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "North_America" & pcinna_pop$MT == "A2")
+nrow(N_america_A2)
+
+binom.test(c(nrow(N_america_A1), nrow(N_america_A2)), p = 0.5)
+
+
+```
+
+
+### South America
+
+```{r}
+
+S_america <- subset(pcinna_pop, pcinna_pop$Continent == "South_America")
+S_america_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "South_America" & pcinna_pop$MT == "A1")
+nrow(S_america_A1)
+
+
+S_america_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "South_America" & pcinna_pop$MT == "A2")
+nrow(S_america_A2)
+
+binom.test(c(nrow(S_america_A1), nrow(S_america_A2)), p = 0.5)
+
+```
+
+
+### Oceania
+
+```{r}
+
+Oceania <- subset(pcinna_pop, pcinna_pop$Continent == "Oceania")
+Oceania_A1 <- subset(pcinna_pop, pcinna_pop$Continent == "Oceania" & pcinna_pop$MT == "A1")
+nrow(Oceania_A1)
+
+
+Oceania_A2 <- subset(pcinna_pop, pcinna_pop$Continent == "Oceania" & pcinna_pop$MT == "A2")
+nrow(Oceania_A2)
+
+binom.test(c(nrow(Oceania_A1), nrow(Oceania_A2)), p = 0.5)
+
+```
+
+
+## Reconstructing ancestral states
+
+# Maximum likelihood tree
+
+```{r, eval = T, fig.height=12, fig.width=12}
+
+library(ape)
+mytree <- read.tree("RAxML_bestTree.Ind205_results")
+mytree <- drop.tip(mytree, "Psojae")
+
+id <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+pop_cinna <- pcinna_pop$Continent
+
+tips <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+
+mytree$tip.label <- tips
+
+ids <- as.data.frame(mytree$tip.label)
+
+ids[2] <- pop_cinna
+rownames(ids) <- ids$`mytree$tip.label`
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+
+tree <- mytree
+x <- ids
+
+library(pals)
+library(phytools, quietly = T, verbose = F)
+
+#tiff("./FIGS/RAXML_tree.tiff", width = 10, height = 7, units = "in", res = 600)
+
+
+plot(ladderize(tree), type = "fan", show.tip.label = FALSE)
+mycol <-hap.percent$color[c(2,1,3,5,6,4,7)]
+cols <- setNames(mycol[1:length(unique(x))],sort(unique(x)))
+tiplabels(pie=to.matrix(x,sort(unique(x))), piecol = mycol,cex=0.25)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+
+
+#dev.off()
+
+
+```
+
+## Reconstructing ancestral states
+
+# Maximum likelihood tree
+
+```{r, eval = T, fig.height=12, fig.width=12}
+
+library(ape)
+mytree <- read.tree("./205Isolates/RAxML_bestTree.Ind205_results")
+mytree <- drop.tip(mytree, "Psojae")
+
+id <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+pop_cinna <- pcinna_pop$Country
+
+tips <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+
+mytree$tip.label <- tips
+
+ids <- as.data.frame(mytree$tip.label)
+
+ids[2] <- pop_cinna
+rownames(ids) <- ids$`mytree$tip.label`
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+
+tree <- mytree
+x <- ids
+
+library(pals)
+library(phytools, quietly = T, verbose = F)
+
+#tiff("./MANUSCRIPT_FIGS/RAXML_tree.tiff", width = 10, height = 7, units = "in", res = 600)
+
+plot(ladderize(tree), type = "fan", show.tip.label = FALSE)
+mycol <- alphabet(n=17)
+cols <- setNames(mycol[1:length(unique(x))],sort(unique(x)))
+tiplabels(pie=to.matrix(x,sort(unique(x))), piecol = mycol,cex=0.25)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+
+#dev.off()
+```
+
+
+## Ancestral character estimation using ape and phytools.
+
+Package ape has an function called ace(ancestral character estimation). This function can be used to map traits (either discrete or continous) on a tree. Here, I have made an attempt to map "geographic location" as discrete trait on a RAXML tree previously obtained. We use maximum likelihood method and Equal rate (ER) model to infer the probablity of root node. 
+
+Other rate models are also available in ape e.g. ARD model or SYM model. ARD stands for all-rates-different model and SYM is for symmetrical model.
+
+```{r, eval = T, fig.height=12, fig.width=12}
+
+fitER <- ace(x, tree, type="discrete", method = "ML", model = "ER", marginal = FALSE)
+fitER
+#tiff("./MANUSCRIPT_FIGS/Ancestral_reconstruction_RAXML.tiff", width = 10, height = 8, units = "in", res = 600)
+plot.phylo(ladderize(tree), type = "fan", show.tip.label = F)
+mycol <- alphabet(n=17)
+nodelabels(node=1:tree$Nnode+Ntip(tree),
+           pie=fitER$lik.anc,piecol=mycol,cex=0.3)
+#tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+# dev.off()
+
+head(fitER$lik.anc)
+```
+
+# Plotting root state probabality at ancestral node
+
+```{r}
+rspp <- as.data.frame(fitER$lik.anc[1, ])
+colnames(rspp) <- "RSPP"
+rspp <- cbind(pop = rownames(rspp), rspp)
+rownames(rspp) <- NULL
+
+library(ggplot2)
+
+#tiff("./MANUSCRIPT_FIGS/RSPP.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = rspp) + aes(x = pop, y = RSPP, fill = pop) + geom_bar(stat = "identity") + 
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Root state posterior probablity") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) 
+
+#dev.off()
+
+
+## RSPP at different nodes
+
+# plot.phylo(ladderize(tree), show.tip.label = F)
+# mycol <- alphabet(n=17)
+# tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
+# nodelabels(1:203, adj = 1, frame = "n", cex = 1)
+# nodelabels(adj = 1, frame = "n", cex = 1)
+# nodelabels(node=1:tree$Nnode+Ntip(tree), pie=fitER$lik.anc,piecol=mycol,cex=0.3)
+# 
+# rspp <- as.data.frame(fitER$lik.anc[46, ]) ## 114, 44
+# colnames(rspp) <- "RSPP"
+# rspp <- cbind(pop = rownames(rspp), rspp)
+# rownames(rspp) <- NULL
+ggplot(data = rspp) + aes(x = pop, y = RSPP, fill = pop) + geom_bar(stat = "identity") +
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Root state posterior probablity") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold"))
+
+```
