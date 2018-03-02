@@ -1,0 +1,157 @@
+---
+title: "Diversity stats"
+author: "Shankar K Shakya"
+date: "February 27, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+library(vcfR, quietly = T, verbose = F)
+library(poppr, quietly = T, verbose = F)
+library(ggplot2, quietly = T, verbose = F)
+library(reshape2, quietly = T, verbose = F)
+library(poppr)
+library(mypackage)
+
+vcf <- read.vcfR("Min10x_cov_205isolates_888Variants.gz", verbose = F)
+
+id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+
+pop_cinna_continent <- pcinna_pop$Continent
+pop_cinna_country <- pcinna_pop$Country
+pop_cinna_sojae <- as.factor(c(as.character(pop_cinna_continent), "Psojae"))
+
+vcf_cinna_sojae <- vcf
+colnames(vcf_cinna_sojae@gt)[length(colnames(vcf_cinna_sojae@gt))] <- "Psojae"
+
+vcf_cinna <- vcf[ , -ncol(vcf_cinna_sojae@gt)]
+
+vcf_cinna <- vcf_cinna[is.polymorphic(vcf_cinna), ]
+vcf_cinna_sojae <- subset_vcf2vcf(vcf_cinna_sojae, vcf_cinna)
+
+vcf_cinna
+pop_cinna_continent
+pop_cinna_country
+
+continent <- as.character(pcinna_pop$Continent)
+country <- as.character(pcinna_pop$Country)
+
+continent[grep("Taiwan", country)] <- "Taiwan"
+continent[grep("Vietnam", country)] <- "Vietnam"
+
+country_continent_mixpop <- continent
+new_pop <- country_continent_mixpop
+
+
+```
+
+
+```{r}
+
+vcf_cinna_noPNG <- vcf_popsub(vcf_cinna, pop = new_pop, in_pop = as.character(unique(new_pop))[-7])
+pop_noPNG <- new_pop[-grep("Oceania", new_pop)]
+
+vcf <- vcf_cinna_noPNG
+population <- pop_noPNG
+
+
+vcf_gid <- vcfR2genind(vcf)
+pop(vcf_gid) <- population
+
+library(RColorBrewer)
+
+#mycol <- brewer.pal(n = length(unique(population)), name = "Accent") %>% setNames(unique(population))
+#mycol <- pals::alphabet(n = length(unique(population))) %>% setNames(unique(population))
+mycol <- c("#ff0000", "#00ff00","#FFFF00","#0000FF","#00FFFF","#FF00FF","#FFC0CB") %>% setNames(unique(population))
+
+msn1 <- poppr.msn(vcf_gid , distmat = bitwise.dist(vcf_gid), palette = mycol, showplot = F)
+
+#tiff("./FIGS/Msn1.tiff", width = 10, height = 10, units = "in", res = 600)
+set.seed(999)
+plot_poppr_msn(vcf_gid , msn1, inds = "na")
+#dev.off()
+
+
+```
+
+
+```{r}
+vcf_gl <- as.genclone(vcf_gid)
+
+#tiff("./FIGS/cutoff.tiff", width = 7, height = 7, units = "in", res = 600)
+thresh <- filter_stats(vcf_gl, distance = bitwise.dist, plot = TRUE)
+#dev.off()
+
+#cutoff_predictor(thresh$average$THRESHOLDS)
+#cutoff_predictor(thresh$farthest$THRESHOLDS)
+#cutoff_predictor(thresh$nearest$THRESHOLDS)
+
+mlg.filter(vcf_gl, algorithm = "average_neighbor", distance = "bitwise.dist") <- 0.06
+#mlg.filter(vcf_gl, algorithm = "average_neighbor", distance = "bitwise.dist") <- cutoff_predictor(thresh$average$THRESHOLDS)
+
+mlg.table(vcf_gl)
+
+msn2 <- poppr.msn(vcf_gl , distmat = bitwise.dist(vcf_gl), palette = mycol, showplot = F)
+
+#tiff("./FIGS/Msn2_bycountry.tiff", width = 10, height = 10, units = "in", res = 600)
+set.seed(999)
+plot_poppr_msn(vcf_gl , msn2, inds = "FALSE")
+#dev.off()
+
+```
+
+
+```{r}
+library(forcats)
+mlg.df <- mlg.table(vcf_gl, plot = F)
+
+#head(mlg.df)
+
+mlg.df.t <- t(mlg.df)
+
+mlg.percent <- as.data.frame(colSums(mlg.df.t > 0) / nrow(mlg.df.t))
+colnames(mlg.percent) <- "Haplotype_diversity"
+
+mlg.percent <- mlg.percent[order(mlg.percent$Haplotype_diversity, decreasing = T), 1, drop = F]
+
+#tiff("./FIGS/No_PNGMLG.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = mlg.percent, aes(x = fct_inorder(rownames(mlg.percent)), y = Haplotype_diversity)) +  
+  geom_bar(stat = "identity", fill = mycol[c(2, 6, 3, 4, 1, 5, 7)]) +
+  theme(legend.position="none") +
+  theme(legend.text = element_text(size = 12)) +
+  theme(axis.text.x = element_text(size = 12, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 12, face = "bold")) +
+  labs(x = "Population", y = "Percent observed MLGs") +
+  theme(axis.title = element_text(size = 15, face = "bold")) 
+
+#dev.off()
+
+## Rarefaction
+
+mlg.df <- mlg.table(vcf_gl, plot = F)
+
+library(vegan)
+S <- specnumber(mlg.df)  # observed number of MLGs
+raremax <- min(rowSums(mlg.df))
+Srare <- rarefy(mlg.df, raremax)
+#plot(S, Srare, xlab = "Observed No. of MLGs", ylab = "Rarefied No. of MLGs")
+#abline(0, 1)
+
+#tiff("./FIGS/No_PNGrarefaction_curve.tiff", width = 7, height = 7, units = "in", res = 600)
+rarecurve(mlg.df, step = 1, sample = raremax, cex = 1, lwd = 3, ylab = "Multi Locus Genotypes",  
+          col = mycol, cex.lab = 1.5 )
+#dev.off()
+
+
+```
+
+
