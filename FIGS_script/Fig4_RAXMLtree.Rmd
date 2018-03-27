@@ -1,0 +1,128 @@
+---
+title: "Fig 3. RAXML tree"
+author: "Shankar K Shakya"
+date: "February 26, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+rm(list =ls())
+library(ape)
+#mytree <- read.tree("RAxML_bestTree.Ind205_results")
+mytree <- read.tree("205Isolates_RAXML/RAxML_bipartitions.Ind205_results")
+
+#mytree <- read.tree("ASC_MULTIGAMMA/RAxML_bipartitions.Ind205_results_MULTIGAMMAI")
+mytree$tip.label
+
+mytree <- drop.tip(mytree, "Psojae")
+
+id <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+pop_cinna_continent <- pcinna_pop$Continent
+
+continent <- as.character(pcinna_pop$Continent)
+country <- as.character(pcinna_pop$Country)
+
+continent[grep("Taiwan", country)] <- "Taiwan"
+continent[grep("Vietnam", country)] <- "Vietnam"
+
+country_continent_mixpop <- continent
+new_pop <- country_continent_mixpop
+
+tips <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+
+mytree$tip.label <- tips
+
+ids <- as.data.frame(mytree$tip.label)
+
+ids[2] <- new_pop
+rownames(ids) <- ids$`mytree$tip.label`
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+
+tree <- mytree
+x <- ids
+
+
+library(pals)
+library(phytools, quietly = T, verbose = F)
+library(RColorBrewer)
+
+#tiff("./FIGS/RAXML_tree.tiff", width = 10, height = 7, units = "in", res = 600)
+
+# plot(ladderize(tree, right = F), type = "fan", show.tip.label = FALSE)
+# mycol <- c("#0000FF", "#FFFF00","#ff0000","#00FFFF","#000000","#FFC0CB","#00ff00", "#FF00FF") %>% setNames(unique(new_pop))
+# cols <- setNames(mycol[1:length(unique(x))],sort(unique(x)))
+# tiplabels(pie=to.matrix(x,sort(unique(x))), piecol = mycol,cex=0.25)
+# add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+# add.scale.bar()
+
+#dev.off()
+
+######### Bootstrap support
+
+#tiff("./FIGS/FanBootstrap_RAXML_tree.tiff", width = 12, height = 12, units = "in", res = 600)
+
+mycol <- c("#0000FF", "#FFFF00","#ff0000","#00FFFF","#000000","#FFC0CB","#00ff00", "#FF00FF") %>% setNames(unique(new_pop))
+
+plot.phylo(ladderize(tree, right = F), show.tip.label = FALSE, use.edge.length = T, type = "fan")
+
+cols <- setNames(mycol[1:length(unique(x))],sort(unique(x)))
+tiplabels(pie=to.matrix(x,sort(unique(x))), piecol = mycol,cex=0.2)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+mynode <- tree$node.label
+mynode[mynode < 85] <- NA
+nodelabels(mynode, adj = c(1,1.5), frame = "n", cex = 0.7, pch = 12, horiz = T)
+add.scale.bar(x = -1, y = -1)
+
+#dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+population <- pcinna_pop$Continent
+countryInfo <- split(tree$tip.label, population)
+tree2 <- groupOTU(tree, countryInfo)
+tree2$tip.label <- paste(population, pcinna_pop$MT, sep = "_")
+
+ggtree(tree2) + geom_tiplab(size=3, align = T)
+
+
+ggtree(tree2, aes(color=group, label = node), layout="circular", ladderize = TRUE) + geom_tiplab(size=3, aes(angle=angle))
+
+
+
+
+
+```
+

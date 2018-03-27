@@ -1,0 +1,206 @@
+---
+title: "Ancestral state reconstruction"
+author: "Shankar K Shakya"
+date: "February 27, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list =ls())
+
+library(ape)
+mytree <- read.tree("RAxML_bestTree.Ind205_results")
+#mytree <- read.tree("205Isolates_RAXML/RAxML_bipartitions.Ind205_results")
+mytree <- read.tree("ASC_MULTIGAMMA/RAxML_bipartitions.Ind205_results_MULTIGAMMAI")
+
+mytree <- drop.tip(mytree, c("Psojae"))
+
+id <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+pop_cinna_continent <- pcinna_pop$Continent
+
+continent <- as.character(pcinna_pop$Continent)
+country <- as.character(pcinna_pop$Country)
+
+continent[grep("Taiwan", country)] <- "Taiwan"
+continent[grep("Vietnam", country)] <- "Vietnam"
+
+country_continent_mixpop <- continent
+new_pop <- country_continent_mixpop
+
+
+tips <- unlist(strsplit(mytree$tip.label, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+
+mytree$tip.label <- tips
+
+ids <- as.data.frame(mytree$tip.label)
+
+ids[2] <- new_pop
+rownames(ids) <- ids$`mytree$tip.label`
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+
+tree <- mytree
+x.dict <- ids
+
+library(pals)
+library(phytools, quietly = T, verbose = F)
+library(RColorBrewer)
+
+fitER <- ace(x.dict, tree, type="discrete", method = "ML", model = "ER", marginal = FALSE)
+fitER
+
+mycol <- c("#0000FF", "#FFFF00","#ff0000","#00FFFF","#000000","#FFC0CB","#00ff00", "#FF00FF") %>% setNames(unique(new_pop))
+cols <- setNames(mycol[1:length(unique(x.dict))],sort(unique(x.dict)))
+
+#tiff("./ACE.tiff", width = 10, height = 8, units = "in", res = 600)
+plot.phylo(ladderize(tree), type = "fan", show.tip.label = F)
+nodelabels(node=1:tree$Nnode+Ntip(tree),
+           pie=fitER$lik.anc,piecol=mycol,cex=0.3)
+#tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+# dev.off()
+
+rspp <- as.data.frame(fitER$lik.anc[1, ])
+colnames(rspp) <- "RSPP"
+rspp <- cbind(pop = rownames(rspp), rspp)
+rownames(rspp) <- NULL
+
+library(ggplot2)
+library(forcats)
+
+rspp <- rspp[order(rspp$RSPP, decreasing = T), , drop = F]
+
+#tiff("./FIGS/RSPP.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = rspp) + aes(x = fct_inorder(pop), y = RSPP, fill = pop) + geom_bar(stat = "identity", fill = cols[as.numeric(rownames(rspp))]) + 
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Likelihood of root node") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) 
+
+#dev.off()
+
+```
+
+
+```{r}
+
+vcf <- read.vcfR("Min10x_cov_205isolates_888Variants.gz", verbose = F)
+id <- unlist(strsplit(colnames(vcf@gt)[-1], split = ".fq"))
+pcinna_pop <- read.csv("New Microsoft Excel Worksheet.csv", header = TRUE)
+pcinna_pop <- pcinna_pop[pcinna_pop$Isolate %in% id, ]
+pcinna_pop <- pcinna_pop[match(id, pcinna_pop$Isolate), ]
+pop_cinna_continent <- pcinna_pop$Continent
+pop_cinna_country <- pcinna_pop$Country
+pop_cinna_sojae <- as.factor(c(as.character(pop_cinna_continent), "Psojae"))
+
+vcf_cinna_sojae <- vcf
+colnames(vcf_cinna_sojae@gt)[length(colnames(vcf_cinna_sojae@gt))] <- "Psojae"
+
+vcf_cinna <- vcf[ , -ncol(vcf_cinna_sojae@gt)]
+vcf_cinna <- vcf_cinna[is.polymorphic(vcf_cinna), ]
+vcf_cinna_sojae <- subset_vcf2vcf(vcf_cinna_sojae, vcf_cinna)
+
+continent <- as.character(pcinna_pop$Continent)
+country <- as.character(pcinna_pop$Country)
+
+continent[grep("Taiwan", country)] <- "Taiwan"
+continent[grep("Vietnam", country)] <- "Vietnam"
+
+country_continent_mixpop <- continent
+new_pop <- country_continent_mixpop
+
+vcf <- vcf_cinna_sojae
+population <- new_pop
+
+library(ape)
+library(phangorn)
+library(ggtree)
+p <- dist.gene(t(extract.gt(vcf)))
+tree_nj <- nj(p)
+tree_nj <- root(tree_nj, outgroup = "Psojae")
+tree_nj <- drop.tip(tree_nj, tip = "Psojae")
+
+countryInfo <- split(tree_nj$tip.label, population)
+tree2 <- groupOTU(tree_nj, countryInfo)
+tree2$tip.label <- paste(population, pcinna_pop$MT, sep = "_")
+
+ggtree(tree2, aes(color=group, label = node), layout="circular", ladderize = TRUE) +
+  geom_tiplab(size=3, aes(angle=angle))
+
+
+ind_names <- tree_nj$tip.label
+tips <- unlist(strsplit(ind_names, split = ".fq"))
+tips <- unlist(lapply(strsplit(tips, "-"), function(x) x[2]))
+len <- length(which(duplicated(tips)))
+tips[which(duplicated(tips))] <- paste0(seq(1:len), tips[which(duplicated(tips))])
+ids <- as.data.frame(tips)
+ids[2] <- population
+rownames(ids) <- ind_names
+ids <- ids[2]
+ids <- as.matrix(ids)[, 1]
+x.dict <- ids
+
+library(pals)
+library(phytools)
+
+#tiff("./FIGS/NJ_Psojae_dropped_bycontinent.tiff", width = 9, height = 7, units = "in", res = 600)
+plot(ladderize(tree_nj, right = F), type = "fan", show.tip.label = F)
+mycol <- c("#0000FF", "#FFFF00","#ff0000","#00FFFF","#000000","#FFC0CB","#00ff00", "#FF00FF") %>% setNames(unique(new_pop)) 
+#mycol <- mycol[c(4,2,3,1,5,6,7)]
+cols <- setNames(mycol[1:length(unique(x.dict))],sort(unique(x.dict)))
+tiplabels(pie=to.matrix(x.dict,sort(unique(x.dict))), piecol = cols,cex=0.25)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+add.scale.bar()
+#dev.off()
+
+
+tree_nj$edge.length[tree_nj$edge.length == 0] <- 0.000000001
+fitER <- ace(x.dict, tree_nj, type="discrete", method = "ML", model = "ER", marginal = FALSE)
+
+fitER
+#tiff("./Ancestral_reconstruction_NJ_Psojae_dropped_bycontinent.tiff", width = 10, height = 8, units = "in", res = 600)
+plot.phylo(ladderize(tree_nj), type = "fan", show.tip.label = F)
+nodelabels(node=1:tree_nj$Nnode+Ntip(tree_nj),
+           pie=fitER$lik.anc,piecol=cols,cex=0.3)
+#tiplabels(pie=to.matrix(x,sort(unique(x))),piecol=cols,cex=0.3)
+add.simmap.legend(colors=cols,x=0.9*par()$usr[1], y=0.9*par()$usr[4],prompt=FALSE,fsize=0.9)
+# dev.off()
+
+rspp <- as.data.frame(fitER$lik.anc[1, ])
+colnames(rspp) <- "RSPP"
+rspp <- cbind(pop = rownames(rspp), rspp)
+rownames(rspp) <- NULL
+
+library(ggplot2)
+library(forcats)
+
+rspp <- rspp[order(rspp$RSPP, decreasing = T), , drop = F]
+
+tiff("./FIGS/RSPP_NJ_Psojae_dropped_bycontinent.tiff", width = 7, height = 7, units = "in", res = 600)
+
+ggplot(data = rspp) + aes(x = fct_inorder(pop), y = RSPP, fill = pop) + geom_bar(stat = "identity", fill = cols[as.numeric(rownames(rspp))]) + 
+  theme(legend.position="none") +
+  theme(axis.text.x = element_text(size = 10, face = "bold", angle = 60, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) +
+  labs(x = "Population", y = "Likelihood of root node") +
+  theme(axis.title = element_text(size = 15, face = "bold")) +
+  theme(axis.text.y = element_text(size = 10, face = "bold")) 
+
+dev.off()
+
+```
+
